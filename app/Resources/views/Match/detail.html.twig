@@ -1,0 +1,96 @@
+{% extends 'layout.html.twig' %}
+
+{% import '_traits/recursiveMacro.twig' as recursive %}
+
+{% block body %}
+    <h1>Match Nummer {{ data.id }}</h1>
+    {% set white = (data.white | loadUser) %}
+    {% set black = (data.black | loadUser) %}
+    <dl>
+        <dt>Weiß</dt>
+        <dd id="white_player">{% if white %}<a href="{{ url('user_detail', { 'id': white.id }) }}">{{ white.name }}</a>{% else %}No Player{% endif %}</dd>
+        <dt>Schwarz</dt>
+        <dd id="black_player">{% if black %}<a href="{{ url('user_detail', { 'id': black.id }) }}">{{ black.name }}</a>{% else %}No Player{% endif %}</dd>
+        <dt>Startsituation in <a href="https://de.wikipedia.org/wiki/Forsyth-Edwards-Notation" target="_blank">FEN</a></dt>
+        <dd id="start_fen">{{ data.start }}</dd>
+        <dt>Zug Historie in <a href="https://en.wikipedia.org/wiki/Algebraic_notation_%28chess%29" target="_blank">SAN</a></dt>
+        <dd>
+            <ul id="history_lan">
+            {% for historyEntry in data.history %}
+                <li>{{ historyEntry }}</li>
+            {% else %}
+                <li>Es wurden noch keine Züge gespielt.</li>
+            {% endfor %}
+            </ul>
+        </dd>
+        <dt>Aktuelle Situation in <a href="https://de.wikipedia.org/wiki/Forsyth-Edwards-Notation" target="_blank">FEN</a></dt>
+        <dd id="current_fen">{{ playMatch(data.start, data.history) }}</dd>
+    </dl>
+
+    <h2>Match bearbeiten</h2>
+    <form id="post_form" autocomplete="off" action="{{ url('match_update', {'id': data.id}) }}" method="POST">
+        <label for="white">Spieler Weiß:</label> <input list="dusers" id="white" name="white" value="{{ data.white }}"/><br/>
+        <label for="black">Spieler Schwarz:</label> <input list="dusers" id="black" name="black" value="{{ data.black }}"/><br/>
+        <label for="start">Startsituation in <a href="https://de.wikipedia.org/wiki/Forsyth-Edwards-Notation" target="_blank">FEN</a>:</label> <input size="70" id="start" name="start" value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"/>
+        <br/><label for="history">Züge: </label><textarea name="history" id="history">{{ data.history | join("\n") }}</textarea>
+        <span>Je Zeile ein Zug in <a href="https://en.wikipedia.org/wiki/Algebraic_notation_%28chess%29" target="_blank">SAN</a></span>
+        <br/><button type="submit">Speichern</button>
+    </form>
+
+    <h2>Einen Zug hinzufügen</h2>
+    <form id="patch_form" action="{{ url('match_patch', {'id': data.id}) }}">
+        Zug in SAN: <input name="move"><button>Zug hinzufügen</button>
+    </form>
+
+    <h2>Match löschen</h2>
+    <form id="delete_form" action="{{ url('match_delete', {'id': data.id}) }}"><button type="submit">Löschen</button></form>
+
+{% endblock %}
+
+{% block javascript %}
+    {{ parent() }}
+    <script type="text/javascript">
+        document.querySelector('#delete_form').addEventListener('submit', function(e){
+            e.preventDefault();
+            var req = new XMLHttpRequest();
+            req.addEventListener('load', function(ajaxEvent){
+                if(ajaxEvent.target.status === 200) {
+                    window.location = '{{ url('match_list') }}';
+                }else{
+                    e.target.insertAdjacentHTML(
+                            'beforeend',
+                            '<span>Konnte Match nicht löschen.</span>'
+                    );
+                }
+            });
+            req.open('DELETE', e.target.action);
+            req.send();
+        }, false);
+    </script>
+    <script type="text/javascript">
+        document.querySelector('#patch_form').addEventListener('submit', function(e){
+            e.preventDefault();
+            var req = new XMLHttpRequest();
+            req.addEventListener('load', function(ajaxEvent){
+                if(ajaxEvent.target.status === 200) {
+                    window.location = '{{ url('match_detail', {'id': data.id}) }}';
+                }else{
+                    var answer = {message: 'Error '+ajaxEvent.target.status};
+                    if (ajaxEvent.target.status === 409) {
+                        answer = JSON.parse(ajaxEvent.target.response);
+                    }
+
+                    e.target.insertAdjacentHTML(
+                            'beforeend',
+                            '<br/><span>Konnte Zug nicht hinzufügen: '+answer.message+'</span>'
+                    );
+                }
+            });
+            console.log(e.target.querySelector('input[name=move]'));
+            req.open('PATCH', e.target.action);
+            req.setRequestHeader("Content-type","text/san");
+            req.setRequestHeader("Accept","application/json");
+            req.send(e.target.querySelector('input[name=move]').value);
+        }, false);
+    </script>
+{% endblock %}

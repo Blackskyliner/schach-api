@@ -1,0 +1,15 @@
+{% macro printRecursive(key, value) %}
+    {% if key %}<dl>{% endif %}
+    {% if value is array %}
+        {% if key %}<dt><b>{{ key }}</b></dt>
+            <dd><dl>{% endif %}
+        {% for key, value in value %}
+            {{ _self.printRecursive(key, value) }}
+        {% endfor %}
+        {% if key %}</dl></dd>{% endif %}
+    {% else %}
+        <dt><b>{{ key }}</b></dt>
+        <dd><i>{{ value | prettyPrint }}</i></dd>
+    {% endif %}
+    {% if key %}</dl>{% endif %}
+{% endmacro %}

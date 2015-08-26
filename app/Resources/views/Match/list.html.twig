@@ -1,0 +1,25 @@
+{% extends 'layout.html.twig' %}
+
+{% block body %}
+    <h1>Matchübersicht</h1>
+    {% for match in data %}
+        <ul>
+            <li>
+                <a href="{{ match }}">{{ match }}</a>
+            </li>
+        </ul>
+    {% else %}
+        <p>Es wurden noch keine Matches angelegt.</p>
+    {% endfor %}
+
+    <h2>Neues Match erstellen</h2>
+    <form autocomplete="off" action="{{ url('match_create') }}" method="POST">
+        <label for="white">Spieler Weiß:</label> <input list="dusers" id="white" name="white"/><br/>
+        <label for="black">Spieler Schwarz:</label> <input list="dusers" id="black" name="black"/><br/>
+        <label for="start">Startsituation in <a href="https://de.wikipedia.org/wiki/Forsyth-Edwards-Notation" target="_blank">FEN</a>:</label> <input size="70" id="start" name="start" value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"/>
+        <br/>
+        <label for="history">History: </label><textarea name="history" id="history"></textarea>
+        <span>Je Zeile ein Zug in <a href="https://en.wikipedia.org/wiki/Algebraic_notation_%28chess%29" target="_blank">SAN</a></span>
+        <br/><button type="submit">Erstellen</button>
+    </form>
+{% endblock %}

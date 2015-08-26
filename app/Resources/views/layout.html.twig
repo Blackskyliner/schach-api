@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chess API</title>
+    {% block stylesheet %}
+        <style>
+            textarea{
+                min-height: 100px;
+            }
+            dt{
+                font-weight: bold;
+                margin-top: 10px;;
+            }
+        </style>
+    {% endblock %}
+</head>
+<body>
+    {% block body %}
+    {% endblock %}
+
+    <!-- Datalist field with all users -->
+    <datalist id="dusers">
+        {% for user in getUsers() %}
+            <option label="{{ url('user_detail', {'id': user.id}) }} ({{ user.name }})">{{ url('user_detail', {'id': user.id}) }}</option>
+        {% endfor %}
+    </datalist>
+
+    {% block navigation %}
+        {% include '_traits/navigation.html.twig' with {'links': links} %}
+    {% endblock %}
+    {% block javascript %}
+        <script>
+            function openAdvancedHelp() {
+                var req = new XMLHttpRequest();
+                req.open('OPTIONS', window.location);
+                req.addEventListener('load', function(e){
+                    var w = window.open(
+                        '',
+                        'help_window',
+                        'directories=0,titlebar=0,toolbar=0,location=0,status=0,menubar=0,scrollbars=yes'
+                            +',resizable=yes,width=500,height=500'
+                    );
+                    w.document.open();
+                    w.document.write(e.target.response);
+                    w.document.close();
+                });
+                req.send();
+            }
+        </script>
+        <script>
+            var navigation = document.querySelector('#navigation');
+            if (navigation) {
+                navigation.insertAdjacentHTML(
+                    'beforeend',
+                    '<li><a href="#" onclick="openAdvancedHelp()">OPTIONS {{ request.pathinfo }}</a></li>'
+                )
+            }
+        </script>
+    {% endblock %}
+</body>
+</html>
+

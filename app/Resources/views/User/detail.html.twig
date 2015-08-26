@@ -1,0 +1,37 @@
+{% extends 'layout.html.twig' %}
+
+{% block body %}
+    <p>Id: {{ data.id }}</p>
+    <p>Name: {{ data.name }}</p>
+
+    <h2>Benutzer löschen</h2>
+    <form id="delete_form" action="{{ url('user_delete', {'id': data.id}) }}"><button type="submit">Löschen</button></form>
+    <h2>Benutzer bearbeiten</h2>
+    <form id="post_form" action="{{ url('user_update', {'id': data.id}) }}" method="POST">
+        <label for="name">Username:</label> <input id="name" name="name" value="{{ data.name }}"/><br/>
+        <label for="password">Password:</label> <input id="password" type="password" name="password"/>
+        <button type="submit">Speichern</button>
+    </form>
+{% endblock %}
+
+{% block javascript %}
+    {{ parent() }}
+    <script type="text/javascript">
+        document.querySelector('#delete_form').addEventListener('submit', function(e){
+            e.preventDefault();
+            var req = new XMLHttpRequest();
+            req.addEventListener('load', function(ajaxEvent){
+                if(ajaxEvent.target.status === 200) {
+                    window.location = '{{ url('user_list') }}';
+                }else{
+                    e.target.insertAdjacentHTML(
+                        'beforeend',
+                        '<span>Konnte Benutzer nicht löschen.</span>'
+                    );
+                }
+            });
+            req.open('DELETE', e.target.action);
+            req.send();
+        }, false);
+    </script>
+{% endblock %}

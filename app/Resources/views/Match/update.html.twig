@@ -1,0 +1,6 @@
+{% extends 'layout.html.twig' %}
+
+{% block body %}
+    <p>Das Match wurde erfolgreich bearbeitet.</p>
+    <p><a href="{{ url('match_detail', {'id': data.id}) }}">Klicke hier um zum Match zu gelangen.</a></p>
+{% endblock %}

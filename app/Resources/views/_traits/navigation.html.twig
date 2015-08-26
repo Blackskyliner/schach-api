@@ -1,0 +1,9 @@
+<h2>Links:</h2>
+<ul id="navigation">
+    {% for entry in links %}
+        {# In der HTML Ansicht sind templated Links sinnlos ... #}
+        {% if entry.attributes.templated is not defined or not entry.attributes.templated %}
+            <li><a href="{{ entry.uri }}">{{ entry.uri }}</a></li>
+        {% endif %}
+    {% endfor %}
+</ul>

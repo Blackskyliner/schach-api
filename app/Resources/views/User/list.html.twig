@@ -1,0 +1,21 @@
+{% extends 'layout.html.twig' %}
+
+{% block body %}
+    <h1>Benutzerübersicht</h1>
+    {% for user in data %}
+        <ul>
+            <li>
+                <a href="{{ user }}">{{ user }}</a>
+            </li>
+        </ul>
+    {% else %}
+        <p>Es wurden noch keine Benutzer angelegt.</p>
+    {% endfor %}
+
+    <h2>Benutzer erstellen</h2>
+    <form id="post_form" action="{{ url('user_create') }}" method="POST">
+        <label for="name">Username:</label> <input id="name" name="name"/><br/>
+        <label for="password">Password:</label> <input id="password" type="password" name="password"/>
+        <button type="submit">Erstellen</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends 'layout.html.twig' %}
+
+{% block body %}
+    <p>Der Benutzer wurde erfolgreich angelegt.</p>
+    <p><a href="{{ url('user_detail', {'id': data.id}) }}">Klicke hier um zum Benutzer zu gelangen.</a></p>
+{% endblock %}

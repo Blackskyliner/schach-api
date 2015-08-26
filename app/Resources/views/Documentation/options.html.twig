@@ -1,0 +1,37 @@
+{% extends 'layout.html.twig' %}
+{% import '_traits/recursiveMacro.twig' as recursive %}
+
+{% block stylesheet %}
+    <style>
+        div {
+            margin-left: 15px;
+        }
+        h3{
+            text-decoration: underline;
+        }
+    </style>
+{% endblock %}
+{% block body %}
+    {% for method, details in data %}
+    <h2>{{ method }}</h2>
+    <div>
+        <h3>Description</h3>
+        <div><p>{{ details.description }}</p></div>
+
+        {% if details.parameters is defined and details.parameters is not empty %}
+            <h3>Parameters</h3>
+            <div>{{ recursive.printRecursive(null, details.parameters) | raw }}</div>
+        {% endif %}
+        {% if details.example is defined and details.example is not empty %}
+            <h3>Example</h3>
+            <div>{{ recursive.printRecursive(null, details.example) | raw }}</div>
+        {% endif %}
+        {% if details.returnValues is defined and details.returnValues is not empty %}
+            <h3>Return Codes</h3>
+            <div>{{ recursive.printRecursive(null, details.returnValues) | raw }}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+{% endblock %}
+
+{% block navigation %}{% endblock %}

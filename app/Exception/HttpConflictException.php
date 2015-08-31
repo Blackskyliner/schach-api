@@ -16,7 +16,7 @@ class HttpConflictException extends HttpException
         $message,
         $property = null,
         $developerMessage = null,
-        $moreInfo = null,
+        //$moreInfo = null,
         $status = Response::HTTP_CONFLICT,
         \Exception $previous = null,
         array $headers = array(),
@@ -28,7 +28,7 @@ class HttpConflictException extends HttpException
             'property' => $property,
             'message' => $message,
             'developerMessage' => $developerMessage,
-            'moreInfo' => $moreInfo
+            //'moreInfo' => $moreInfo
         ];
 
         $exceptionMessage = sprintf(
@@ -47,9 +47,9 @@ class HttpConflictException extends HttpException
             $exceptionMessage .=  sprintf('Developer Information: %s', $developerMessage).PHP_EOL;
         }
 
-        if ($moreInfo !== null) {
+        /*if ($moreInfo !== null) {
             $exceptionMessage .=  sprintf('More Information: %s', $moreInfo).PHP_EOL;
-        }
+        }*/
 
 
         parent::__construct($status, $exceptionMessage, $previous, $headers, $exceptionCode);

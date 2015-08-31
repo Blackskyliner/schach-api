@@ -2,11 +2,18 @@
 
 namespace Htwdd\Chessapi\Controller;
 
+use Nocarrier\Hal;
+use Symfony\Component\HttpFoundation\Request;
+
 class RootController
 {
-    public function indexAction()
+    public function indexAction(Request $request)
     {
-        return [];
+        if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)){
+            return [];
+        } else {
+            return new Hal();
+        }
     }
 
     /**

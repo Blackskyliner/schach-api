@@ -3,6 +3,7 @@
 namespace Htwdd\Chessapi\Controller;
 
 use Htwdd\Chessapi\DataTransformer\MatchTransformer;
+use Htwdd\Chessapi\DataTransformer\UserTransformer;
 use Htwdd\Chessapi\Entity\Match;
 use Htwdd\Chessapi\Entity\MatchManager;
 use Htwdd\Chessapi\Entity\User;
@@ -13,12 +14,20 @@ use Htwdd\Chessapi\Service\ChessService;
 use Htwdd\Chessapi\UrlGeneratorAwareInterface;
 use Htwdd\Chessapi\UrlGeneratorAwareTrait;
 use Nocarrier\Hal;
+use Nocarrier\HalLink;
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+/**
+ * Class MatchController
+ * @package Htwdd\Chessapi\Controller
+ *
+ * TODO: fix history for empty lines!!!!!!!
+ *
+ */
 class MatchController implements UrlGeneratorAwareInterface
 {
     /** @var  MatchManager */
@@ -52,6 +61,16 @@ class MatchController implements UrlGeneratorAwareInterface
         return $this->matchManager;
     }
 
+
+    /**
+     * @return UserManager
+     */
+    protected function getUserManager()
+    {
+        return $this->userManager;
+    }
+
+
     public function listAction(Request $request)
     {
         $retVal = [];
@@ -63,7 +82,7 @@ class MatchController implements UrlGeneratorAwareInterface
                 );
 
                 $retVal[] = [
-                    'ref' => 'match:'.$matchId,
+                    'ref' => 'match',//:'.$matchId,
                     'link' => $link
                 ];
             } catch (\InvalidArgumentException $e) {
@@ -274,18 +293,22 @@ class MatchController implements UrlGeneratorAwareInterface
     {
         if ($data instanceof Match) {
             $matchArray = (new MatchTransformer())->toArray($data);
-            if (current($request->getAcceptableContentTypes()) === 'text/html') {
+            if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
                 return $matchArray;
             } else {
-                return new Hal(
+                $hal = new Hal(
                     $request->getPathInfo(),
                     $matchArray
                 );
+
+                $this->handleEmbedding($request, $hal);
+
+                return $hal;
             }
         }
 
         if (is_array($data)) {
-            if (current($request->getAcceptableContentTypes()) === 'text/html') {
+            if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
                 $retVal = [];
 
                 foreach ($data as $dataDetails) {
@@ -295,24 +318,101 @@ class MatchController implements UrlGeneratorAwareInterface
                 return $retVal;
             } else {
                 $hal = new Hal($request->getPathInfo());
-                $hal->addCurie(
-                    'match',
-                    // We use the generator to get us an valid URI and replace the ID with the CURIE placeholder
-                    str_replace(
-                        '1337',
-                        '{rel}',
-                        $this->getUrlGenerator()->generate('match_detail', ['id' => 1337])
-                    )
-                );
                 foreach ($data as $dataDetails) {
-                    $hal->addLink($dataDetails['ref'], $dataDetails['link']);
+                    $hal->addLink($dataDetails['ref'], $dataDetails['link'], array(), true);
                 }
+
+                $this->handleEmbedding($request, $hal);
 
                 return $hal;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Fügt die Ressourcen direkt in den HAL Response hinzu.
+     *
+     * Könnte besser gelöst werden, indem das generisch im VIEW Event behandelt wird.
+     * Dabei könnte ein SubRequest durch den HTTP Kernel an den Detailendpunkt gesendet werden.
+     *
+     * @param Request $request
+     * @param Hal $halResource
+     */
+    protected function handleEmbedding(Request $request, Hal $hal) {
+        $embed['resource'] = false;
+        $embed['white'] = false;
+        $embed['black'] = false;
+        foreach ($request->query as $name => $value) {
+            // handle embedding
+            if (strpos($name, 'embed') !== false) {
+                $embed['resource'] = true;
+                if (strpos($name, '-') !== false) {
+                    // handle sub fields
+                    if (strpos($name, 'white') !== false) {
+                        $embed['white'] = true;
+                    }
+                    if (strpos($name, 'black') !== false) {
+                        $embed['black'] = true;
+                    }
+                }
+            }
+        }
+        if ($embed['resource']) {
+            $userTransformer = new UserTransformer();
+            $matchTransformer = new MatchTransformer();
+            $embedding = [];
+            foreach ($hal->getLinks() as $rel => $halLinkCollection) {
+                if ($rel === 'match') {
+                    foreach ($halLinkCollection as $halLink) {
+                        /** @var HalLink $halLink */
+                        /** @var Match $match */
+                        $match = $this->getMatchManager()->loadByResource($halLink->getUri());
+                        if ($match) {
+                            $embedding[$halLink->getUri()] = $matchTransformer->toArray($match);
+                            if ($embed['white']
+                             && $match->getWhite()
+                             && !array_key_exists($match->getWhite(), $embedding)
+                            ) {
+                                $user = $this->getUserManager()->loadByResource($match->getWhite());
+                                $embedding[$match->getWhite()] = $userTransformer->toArray($user);
+                            }
+                            if ($embed['black']
+                             && $match->getBlack()
+                             && !array_key_exists($match->getBlack(), $embedding)
+                            ) {
+                                $user = $this->getUserManager()->loadByResource($match->getBlack());
+                                $embedding[$match->getBlack()] = $userTransformer->toArray($user);
+                            }
+                        }
+                    }
+                }
+            }
+            if ($data = $hal->getData()) {
+                if ($embed['white']
+                    && array_key_exists('white', $data)
+                    && $data['white']
+                    && !array_key_exists($data['white'], $embedding)
+                ) {
+                    $user = $this->getUserManager()->loadByResource($data['white']);
+                    $embedding[$data['white']] = $userTransformer->toArray($user);
+                }
+                if ($embed['black']
+                    && array_key_exists('black', $data)
+                    && $data['black']
+                    && !array_key_exists($data['black'], $embedding)
+                ) {
+                    $user = $this->getUserManager()->loadByResource($data['black']);
+                    $embedding[$data['black']] = $userTransformer->toArray($user);
+                }
+            }
+            if ($embedding) {
+                $data = $hal->getData();
+                $data['_embedded'] = $embedding;
+                $hal->setData($data);
+            }
+        }
     }
 
     /**
@@ -334,6 +434,11 @@ class MatchController implements UrlGeneratorAwareInterface
                 'POST' => [
                     'method' => 'controller.match:createAction',
                     'description' => 'Create a match',
+                    'content-types' => [
+                        'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
+                    ],
                     'parameters' => [
                         'white' => [
                             'required' => true,
@@ -390,6 +495,8 @@ class MatchController implements UrlGeneratorAwareInterface
                     'method' => 'controller.match:replaceAction',
                     'content-types' => [
                         'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
                     ],
                     'description' => 'Replaces the match with the given content.',
                     'parameters' => [
@@ -438,6 +545,8 @@ class MatchController implements UrlGeneratorAwareInterface
                     'method' => 'controller.match:updateAction',
                     'content-types' => [
                         'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
                     ],
                     'description' => 'Updates the match.',
                     'parameters' => [

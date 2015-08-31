@@ -55,8 +55,9 @@ class UserController implements UrlGeneratorAwareInterface
                 );
 
                 $retVal[] = [
-                    'ref' => 'user:'.$userId,
-                    'link' => $link
+                    'ref' => 'user',//:'.$userId,
+                    'link' => $link,
+                    'id' => $userId
                 ];
             } catch (\InvalidArgumentException $e) {
             }
@@ -217,18 +218,22 @@ class UserController implements UrlGeneratorAwareInterface
     {
         if ($data instanceof User) {
             $matchArray = (new UserTransformer())->toArray($data);
-            if (current($request->getAcceptableContentTypes()) === 'text/html') {
+            if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
                 return $matchArray;
             } else {
-                return new Hal(
+                $hal = new Hal(
                     $request->getPathInfo(),
                     $matchArray
                 );
+
+                $this->handleEmbedding($request, $hal);
+
+                return $hal;
             }
         }
 
         if (is_array($data)) {
-            if (current($request->getAcceptableContentTypes()) === 'text/html') {
+            if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
                 $retVal = [];
 
                 foreach ($data as $dataDetails) {
@@ -238,24 +243,49 @@ class UserController implements UrlGeneratorAwareInterface
                 return $retVal;
             } else {
                 $hal = new Hal($request->getPathInfo());
-                $hal->addCurie(
-                    'user',
-                    // We use the generator to get us an valid URI and replace the ID with the CURIE placeholder
-                    str_replace(
-                        '1337',
-                        '{rel}',
-                        $this->getUrlGenerator()->generate('user_detail', ['id' => 1337])
-                    )
-                );
                 foreach ($data as $dataDetails) {
-                    $hal->addLink($dataDetails['ref'], $dataDetails['link']);
+                    $hal->addLink($dataDetails['ref'], $dataDetails['link'], array(), true);
                 }
+
+                $this->handleEmbedding($request, $hal);
 
                 return $hal;
             }
         }
 
         return null;
+    }
+
+    /**
+     * @param Request $request
+     * @param Hal $halResource
+     */
+    protected function handleEmbedding(Request $request, Hal $hal) {
+        $implyEmbed = false;
+        foreach ($request->query as $name => $value) {
+            // handle embedding
+            if (strpos($name, 'embed') !== false) {
+                $implyEmbed = true;
+            }
+        }
+        if ($implyEmbed) {
+            $userTransformer = new UserTransformer();
+            $embedding = [];
+            foreach ($hal->getLinks() as $rel => $halLinkCollection) {
+                if ($rel === 'user') {
+                    foreach ($halLinkCollection as $halLink) {
+                        /** @var HalLink $halLink */
+                        $user = $this->getUserManager()->loadByResource($halLink->getUri());
+                        if ($user) {
+                            $embedding[$halLink->getUri()] = $userTransformer->toArray($user);
+                        }
+                    }
+                }
+            }
+            $data = $hal->getData();
+            $data['_embedded'] = $embedding;
+            $hal->setData($data);
+        }
     }
 
     /**
@@ -278,6 +308,8 @@ class UserController implements UrlGeneratorAwareInterface
                     'description' => 'Create a user.',
                     'content-types' => [
                         'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
                     ],
                     'parameters' => [
                         'name' => [
@@ -317,6 +349,8 @@ class UserController implements UrlGeneratorAwareInterface
                     'method' => 'controller.user:replaceAction',
                     'content-types' => [
                         'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
                     ],
                     'description' => 'Replaces or creates the user.',
                     'parameters' => [
@@ -347,6 +381,8 @@ class UserController implements UrlGeneratorAwareInterface
                     'method' => 'controller.user:updateAction',
                     'content-types' => [
                         'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
                     ],
                     'description' => 'Update the user. May be used by a HTML-Form.',
                     'parameters' => [

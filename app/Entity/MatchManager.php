@@ -11,6 +11,7 @@ class MatchManager extends AbstractEntityManager
      * @inheritDoc
      *
      * @param Match $entity
+     * TODO: durch neue methode im manager direkt im abstract ersetzen :D
      */
     protected function getFileNameForObject($entity)
     {

@@ -170,17 +170,17 @@ class ControllerProvider implements ControllerProviderInterface
                     /** @var Route $routeObject */
                     $routeDepth = substr_count(rtrim($routeObject->getPath(), '/'), '/');
                     if ((( // Test for sub-links
-                            $routeDepth > $currentDepth // only links in deeper depth
-                         && $routeDepth - $currentDepth === 1 // constrain depth to 1
-                         && strpos(
-                             $routeObject->getPath(),
-                             $currentRoute->getPath()
-                         ) === 0 // only routes which start with current URI
-                        ) || ( // Test for parent links
-                            $routeDepth < $currentDepth
-                         && $routeDepth - $currentDepth === -1
-                         && strpos($currentRoute->getPath(), $routeObject->getPath()) === 0
-                        )) && in_array('GET', $routeObject->getMethods(), true) // we only want to expose GET uris
+                                $routeDepth > $currentDepth // only links in deeper depth
+                                && $routeDepth - $currentDepth === 1 // constrain depth to 1
+                                && strpos(
+                                    $routeObject->getPath(),
+                                    $currentRoute->getPath()
+                                ) === 0 // only routes which start with current URI
+                            ) || ( // Test for parent links
+                                $routeDepth < $currentDepth
+                                && $routeDepth - $currentDepth === -1
+                                && strpos($currentRoute->getPath(), $routeObject->getPath()) === 0
+                            )) && in_array('GET', $routeObject->getMethods(), true) // we only want to expose GET uris
                     ) {
                         $attribs = ['rel' => $routeName];
                         if (strpos($routeObject->getPath(), '{')) {
@@ -207,6 +207,7 @@ class ControllerProvider implements ControllerProviderInterface
                 foreach ($acceptHeaders->all() as $header) {
                     switch ($header->getValue()) {
                         case 'text/html':
+                        case '*/*':
                             if (isset($app['twig'])) {
                                 /** @var \Twig_Environment $twig */
                                 $twig = $app['twig'];
@@ -256,11 +257,15 @@ class ControllerProvider implements ControllerProviderInterface
 
                             $event->setResponse($response);
                             break;
+                        default:
+                            $response->setStatusCode(Response::HTTP_NOT_ACCEPTABLE);
+                            $event->setResponse($response);
                     }
                 }
             }
             if ($event->getControllerResult() instanceof Hal) {
                 $acceptHeaders = AcceptHeader::fromString($event->getRequest()->headers->get('Accept'));
+
                 /** @var Hal $data */
                 $data = $event->getControllerResult();
 
@@ -268,7 +273,7 @@ class ControllerProvider implements ControllerProviderInterface
                 $halLinks = $app['hal_links'];
 
                 // merge global links
-                foreach ($halLinks as $link){
+                foreach ($halLinks as $link) {
                     /** @var HalLink $link */
                     $attribs = $link->getAttributes();
                     $uri = $link->getUri();
@@ -291,11 +296,27 @@ class ControllerProvider implements ControllerProviderInterface
                             $event->setResponse($response);
                             break;
                         case 'text/xml':
+                            // handle _embedded otherwise it won't be XML valid...
+                            $halData = $data->getData();
+                            if (array_key_exists('_embedded', $halData)) {
+                                foreach ($halData['_embedded'] as $uri => $resource) {
+                                    $data->addResource('embedded', new Hal(
+                                        $uri,
+                                        $resource
+                                    ));
+                                }
+                            }
+                            unset($halData['_embedded']);
+                            $data->setData($halData);
+
                             $response->headers->set('Content-Type', 'text/xml');
                             $response->setContent($data->asXml(false));
 
                             $event->setResponse($response);
                             break;
+                        default:
+                            $response->setStatusCode(Response::HTTP_NOT_ACCEPTABLE);
+                            $event->setResponse($response);
                     }
                 }
             }
@@ -347,6 +368,9 @@ class ControllerProvider implements ControllerProviderInterface
 
                             $event->setResponse($response);
                             return;
+                        default:
+                            $response->setStatusCode(Response::HTTP_NOT_ACCEPTABLE);
+                            $event->setResponse($response);
                     }
                 }
             }
@@ -386,12 +410,23 @@ class ControllerProvider implements ControllerProviderInterface
                         case 'text/xml':
                             $xmlResponse = new \SimpleXMLElement("<?xml version=\"1.0\"?><response></response>");
 
-                            $this->arrayToXml($exception->getMessage(), $xmlResponse);
+                            $message = $exception->getMessage();
+                            if (!is_array($message)) {
+                                $xmlResponse = new \SimpleXMLElement(
+                                    "<?xml version=\"1.0\"?><response>$message</response>"
+                                );
+                            } else {
+                                $this->arrayToXml($message, $xmlResponse);
+                            }
+
                             $response->headers->set('Content-Type', 'text/xml');
                             $response->setContent($xmlResponse->asXML());
 
                             $event->setResponse($response);
-                            return;
+
+                        default:
+                            $response->setStatusCode(Response::HTTP_NOT_ACCEPTABLE);
+                            $event->setResponse($response);
                     }
                 }
             }

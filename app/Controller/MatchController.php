@@ -603,14 +603,16 @@ class MatchController implements UrlGeneratorAwareInterface
             '/' => [
                 'GET' => [
                     'method' => 'controller.match:listAction',
-                    'description' => 'Get a list of matches.',
+                    'description' => 'Gibt eine Liste von URIs aller Partien zurück. Dabei können die '.
+                                     'GET Parameter embed, embed-white und embed-black verwendet werden, '.
+                                     'um die Partien und deren jeweilige Spieler in die Antwort direkt mit einzubinden.',
                     'returnValues' => [
-                        Response::HTTP_OK => 'The response contains a list of all match resource URIs.',
+                        Response::HTTP_OK => 'Die Antwort enthält eine Liste von URIs aller Partien.',
                     ]
                 ],
                 'POST' => [
                     'method' => 'controller.match:createAction',
-                    'description' => 'Create a match',
+                    'description' => 'Erstellt eine Partie',
                     'content-types' => [
                         'application/x-www-form-urlencoded',
                         'application/json',
@@ -618,26 +620,25 @@ class MatchController implements UrlGeneratorAwareInterface
                     ],
                     'parameters' => [
                         'white' => [
-                            'required' => true,
+                            'required' => false,
                             'type' => 'application/user',
-                            'description' => 'User who should be able to control the white figures.'
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die weißen Figuren repräsentieren soll.'
                         ],
                         'black' => [
-                            'required' => true,
+                            'required' => false,
                             'type' => 'application/user',
-                            'description' => 'User who should be able to control the black figures.'
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die schwarten Figuren repräsentieren soll.'
                         ],
                         'start' => [
                             'required' => false,
                             'type' => 'text/fen',
-                            'description' => 'The initial chess situation in FEN notation.',
+                            'description' => 'Die Startsituation der Schachpartie in FEN',
                             'default' => $dummy->getStart(),
                         ],
                         'history' => [
                             'required' => false,
                             'type' => 'array of text/san',
-                            'description' => 'Moves in chronological order which should be performed '
-                                            .'on the start situation.',
+                            'description' => 'Züge, welche in chronologischer Reihenfolge auf die Startsituation angewendet werden sollen',
                             'default' => $dummy->getHistory(),
                         ]
                     ],
@@ -653,21 +654,22 @@ class MatchController implements UrlGeneratorAwareInterface
                         ]
                     ],
                     'returnValues' => [
-                        Response::HTTP_CREATED => 'The match resource was created successfully and '.
-                            'the current resource representation is contained in the response body.',
-                        Response::HTTP_CONFLICT => 'The resulting match resource is not in a valid state.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'The match resource could not '.
-                            'be persisted on the server.',
+                        Response::HTTP_CREATED => 'Die Partie wurde erfolgreich erstellt und '.
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
                     ]
                 ],
             ],
             '/{id}' => [
                 'GET' =>  [
                     'method' => 'controller.match:detailAction',
-                    'description' => 'Get details of an match.',
+                    'description' => 'Gibt die Details einer Partie zurück. '.
+                                     'Dabei können die GET Parameter ?embed-white und ?embed-black verwendet werden, '.
+                                     'um die Ressource des jeweiligen Spielers in der Antwort mit einzubinden.',
                     'returnValues' => [
-                        Response::HTTP_OK => 'The match resource was found and is contained in the response body.',
-                        Response::HTTP_NOT_FOUND => 'The match resource was not found.',
+                        Response::HTTP_OK => 'Die Partie wurde gefunden befindet sich in der Antwort.',
+                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
                     ]
                 ],
                 'PUT' => [
@@ -677,29 +679,28 @@ class MatchController implements UrlGeneratorAwareInterface
                         'application/json',
                         'text/xml',
                     ],
-                    'description' => 'Replaces the match with the given content.',
+                    'description' => 'Überschreibt oder erstellt eine Partie mit den angegebenen Parametern.',
                     'parameters' => [
                         'white' => [
                             'required' => false,
                             'type' => 'application/user',
-                            'description' => 'User who should be able to control the white figures.'
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die weißen Figuren repräsentieren soll.'
                         ],
                         'black' => [
                             'required' => false,
                             'type' => 'application/user',
-                            'description' => 'User who should be able to control the black figures.'
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die schwarten Figuren repräsentieren soll.'
                         ],
                         'start' => [
                             'required' => false,
                             'type' => 'text/fen',
-                            'description' => 'The initial chess situation in FEN notation.',
+                            'description' => 'Die Startsituation der Schachpartie in FEN',
                             'default' => $dummy->getStart(),
                         ],
                         'history' => [
                             'required' => false,
                             'type' => 'array of text/san',
-                            'description' => 'Moves in chronological order which should be performed '
-                                .'on the start situation.',
+                            'description' => 'Züge, welche in chronologischer Reihenfolge auf die Startsituation angewendet werden sollen',
                             'default' => $dummy->getHistory(),
                         ]
                     ],
@@ -715,11 +716,12 @@ class MatchController implements UrlGeneratorAwareInterface
                         ]
                     ],
                     'returnValues' => [
-                        Response::HTTP_OK => 'The match resource was replaced successfully and '.
-                            'the current resource representation is contained in the response body.',
-                        Response::HTTP_CONFLICT => 'The resulting match resource is not in a valid state.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'The match resource could not '.
-                            'be persisted on the server.',
+                        Response::HTTP_OK => 'Die Partie wurde erfolgreich ersetzt und '.
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CREATED => 'Die Partie wurde erfolgreich erstellt und '.
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
                     ]
                 ],
                 'POST' => [
@@ -729,29 +731,28 @@ class MatchController implements UrlGeneratorAwareInterface
                         'application/json',
                         'text/xml',
                     ],
-                    'description' => 'Updates the match.',
+                    'description' => 'Aktualisiert die Partie anhand der übergebenen Parameter.',
                     'parameters' => [
                         'white' => [
                             'required' => false,
                             'type' => 'application/user',
-                            'description' => 'User who should be able to control the white figures.'
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die weißen Figuren repräsentieren soll.'
                         ],
                         'black' => [
                             'required' => false,
                             'type' => 'application/user',
-                            'description' => 'User who should be able to control the black figures.'
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die schwarten Figuren repräsentieren soll.'
                         ],
                         'start' => [
                             'required' => false,
                             'type' => 'text/fen',
-                            'description' => 'The initial chess situation in FEN notation.',
+                            'description' => 'Die Startsituation der Schachpartie in FEN',
                             'default' => $dummy->getStart(),
                         ],
                         'history' => [
                             'required' => false,
                             'type' => 'array of text/san',
-                            'description' => 'Moves in chronological order which should be performed '
-                                .'on the start situation.',
+                            'description' => 'Züge, welche in chronologischer Reihenfolge auf die Startsituation angewendet werden sollen',
                             'default' => $dummy->getHistory(),
                         ]
                     ],
@@ -767,12 +768,11 @@ class MatchController implements UrlGeneratorAwareInterface
                         ]
                     ],
                     'returnValues' => [
-                        Response::HTTP_OK => 'The match resource was updated successfully and '.
-                            'the current resource representation is contained in the response body.',
-                        Response::HTTP_NOT_FOUND => 'The match resource was not found.',
-                        Response::HTTP_CONFLICT => 'The resulting match resource is not in a valid state.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'The match resource could not '.
-                            'be persisted on the server.',
+                        Response::HTTP_OK => 'Die Partie wurde erfolgreich aktualisiert und '.
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
+                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
                     ]
                 ],
                 'PATCH' => [
@@ -780,26 +780,23 @@ class MatchController implements UrlGeneratorAwareInterface
                     'content-types' => [
                         'text/san',
                     ],
-                    'description' => 'Add a move in standard algebraic notation to the current history of moves.',
+                    'description' => 'Fügt einen Zug in der SAN zu den Zügen der Partie hinzu.',
                     'example' => 'e4',
                     'returnValues' => [
-                        Response::HTTP_OK => 'The match resource was updated successfully and '.
-                            'the current resource representation is contained in the response body.',
-                        Response::HTTP_NOT_FOUND => 'The match resource was not found.',
-                        Response::HTTP_CONFLICT => 'The resulting match resource is not in a valid state.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'The match resource could not '.
-                            'be persisted on the server.',
+                        Response::HTTP_OK => 'Die Partie wurde erfolgreich aktualisiert und '.
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
+                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
                     ]
                 ],
                 'DELETE' => [
                     'method' => 'controller.match:deleteAction',
-                    'description' => 'Delete the match.',
+                    'description' => 'Löscht eine Partie.',
                     'returnValues' => [
-                        Response::HTTP_OK => 'The match resource was deleted successfully and '.
-                            'the last known resource representation is contained in the response body.',
-                        Response::HTTP_NOT_FOUND => 'The match resource was not found.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'The match resource could not '.
-                            'be deleted from the server.',
+                        Response::HTTP_OK => 'Die Partie wurde erfolgreich gelöscht und '.
+                            'die zuletzt bekannte Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
                     ]
                 ],
             ]

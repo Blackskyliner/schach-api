@@ -373,14 +373,16 @@ class UserController implements UrlGeneratorAwareInterface
             '/' => [
                 'GET' => [
                     'method' => 'controller.user:listAction',
-                    'description' => 'Show a list of users.',
+                    'description' => 'Gibt eine Liste von URIs aller Spieler zurück. Dabei kann der '.
+                        'GET Parameter embed verwendet werden, '.
+                        'um die jeweilige Spieler in die Antwort direkt mit einzubinden.',
                     'returnValues' => [
-                        Response::HTTP_OK => 'The response contains a list of all users resource URIs.',
+                        Response::HTTP_OK => 'Die Antwort enthält eine Liste von URIs aller Spieler.',
                     ]
                 ],
                 'POST' => [
                     'method' => 'controller.user:createAction',
-                    'description' => 'Create a user.',
+                    'description' => 'Erstellt einen Spieler.',
                     'content-types' => [
                         'application/x-www-form-urlencoded',
                         'application/json',
@@ -390,12 +392,12 @@ class UserController implements UrlGeneratorAwareInterface
                         'name' => [
                             'required' => true,
                             'type' => 'text/plain',
-                            'description' => 'Name of the user',
+                            'description' => 'Name des Spielers',
                         ],
                         'password' => [
                             'required' => true,
                             'type' => 'text/plain',
-                            'description' => 'Password of the user',
+                            'description' => 'Passwort des Spielers',
                         ],
                     ],
                     'example' => [
@@ -403,21 +405,20 @@ class UserController implements UrlGeneratorAwareInterface
                         'password' => '5e(R37'
                     ],
                     'returnValues' => [
-                        Response::HTTP_CREATED => 'The user resource was created successfully and '.
-                            'the current resource representation is contained in the response body.',
-                        Response::HTTP_CONFLICT => 'The resulting user resource is not in a valid state.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'The user resource could not '.
-                            'be persisted on the server.',
+                        Response::HTTP_CREATED => 'Der Spieler wurde erfolgreich erstellt und '.
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
                     ]
                 ],
             ],
             '/{id}' => [
                 'GET' =>  [
                     'method' => 'controller.user:detailAction',
-                    'description' => 'Show the details of a user.',
+                    'description' => 'Gibt die Detailes eine Spielers zurück.',
                     'returnValues' => [
-                        Response::HTTP_OK => 'The user resource was found and is contained in the response body.',
-                        Response::HTTP_NOT_FOUND => 'The user resource was not found.',
+                        Response::HTTP_OK => 'Der Spieler wurde gefunden befindet sich in der Antwort.',
+                        Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
                     ]
                 ],
                 'PUT' => [
@@ -427,17 +428,17 @@ class UserController implements UrlGeneratorAwareInterface
                         'application/json',
                         'text/xml',
                     ],
-                    'description' => 'Replaces or creates the user.',
+                    'description' => 'Überschreibt oder erstellt einen Spieler mit den angegebenen Parametern.',
                     'parameters' => [
                         'name' => [
                             'required' => true,
                             'type' => 'text/plain',
-                            'description' => 'Name of the user',
+                            'description' => 'Name des Spielers',
                         ],
                         'password' => [
                             'required' => true,
                             'type' => 'text/plain',
-                            'description' => 'Password of the user',
+                            'description' => 'Passwort des Spielers',
                         ],
                     ],
                     'example' => [
@@ -445,11 +446,12 @@ class UserController implements UrlGeneratorAwareInterface
                         'password' => '5e(R37'
                     ],
                     'returnValues' => [
-                        Response::HTTP_OK => 'The user resource was replaced successfully and '.
-                            'the current resource representation is contained in the response body.',
-                        Response::HTTP_CONFLICT => 'The resulting user resource is not in a valid state.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'The user resource could not '.
-                            'be persisted on the server.',
+                        Response::HTTP_OK => 'Der Spieler wurde erfolgreich ersetzt und '.
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CREATED => 'Der Spieler wurde erfolgreich erstellt und '.
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
                     ]
                 ],
                 'POST' => [
@@ -459,17 +461,17 @@ class UserController implements UrlGeneratorAwareInterface
                         'application/json',
                         'text/xml',
                     ],
-                    'description' => 'Update the user. May be used by a HTML-Form.',
+                    'description' => 'Aktualisiert den Spieler anhand der übergebenen Parameter.',
                     'parameters' => [
                         'name' => [
                             'required' => false,
                             'type' => 'text/plain',
-                            'description' => 'Name of the user, if not specified or empty it will not be changed.',
+                            'description' => 'Name des Spielers',
                         ],
                         'password' => [
                             'required' => false,
                             'type' => 'text/plain',
-                            'description' => 'Password of the user, if not specified or empty it will not be changed.',
+                            'description' => 'Passwort des Spielers',
                         ],
                     ],
                     'example' => [
@@ -477,23 +479,21 @@ class UserController implements UrlGeneratorAwareInterface
                         'password' => '5e(R37'
                     ],
                     'returnValues' => [
-                        Response::HTTP_OK => 'The user resource was updated successfully and '.
-                            'the current resource representation is contained in the response body.',
-                        Response::HTTP_NOT_FOUND => 'The user resource was not found.',
-                        Response::HTTP_CONFLICT => 'The resulting user resource is not in a valid state.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'The user resource could not '.
-                            'be persisted on the server.',
+                        Response::HTTP_OK => 'Der Spieler wurde erfolgreich aktualisiert und '.
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
+                        Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
                     ]
                 ],
                 'DELETE' => [
                     'method' => 'controller.user:deleteAction',
-                    'description' => 'Deletes the user.',
+                    'description' => 'Löscht einen Spieler',
                     'returnValues' => [
-                        Response::HTTP_OK => 'The user resource was deleted successfully and '.
-                            'the last known resource representation is contained in the response body.',
-                        Response::HTTP_NOT_FOUND => 'The user resource was not found.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'The user resource could not '.
-                            'be deleted from the server.',
+                        Response::HTTP_OK => 'Der Spieler wurde erfolgreich gelöscht und '.
+                            'die zuletzt bekannte Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
                     ]
                 ],
             ]

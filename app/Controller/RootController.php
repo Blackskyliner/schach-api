@@ -4,6 +4,7 @@ namespace Htwdd\Chessapi\Controller;
 
 use Nocarrier\Hal;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Dieser Controller implementiert alle Funktionen bezüglich der Routen
@@ -56,7 +57,11 @@ class RootController
         return [
             '/' => [
                 'GET' => [
-                    'method' => 'controller.root:indexAction'
+                    'method' => 'controller.root:indexAction',
+                    'description' => 'Schach-API Version 1.0',
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Die Antwort enthält URIs zu den Listenansichten der verwalteten Ressourcen.'
+                    ]
                 ],
             ]
         ];

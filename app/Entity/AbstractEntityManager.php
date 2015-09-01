@@ -3,11 +3,13 @@
 namespace Htwdd\Chessapi\Entity;
 
 use Htwdd\Chessapi\Exception\AutoIncrementException;
-use Htwdd\Chessapi\Exception\NotFoundException;
 use Htwdd\Chessapi\Service\AutoIncrementManager;
 use Htwdd\Chessapi\Service\FileManager;
 use Htwdd\Chessapi\Service\ManagerInterface;
 
+/**
+ * Dieser Manager implementiert die Grundfunktionen des Managerinterfaces.
+ */
 abstract class AbstractEntityManager implements ManagerInterface
 {
     /** @var FileManager  */
@@ -49,7 +51,10 @@ abstract class AbstractEntityManager implements ManagerInterface
      * @param object $entity
      * @return string
      */
-    abstract protected function getFileNameForObject($entity);
+    protected function getFileNameForObject($entity)
+    {
+        return $this->getFileNameForObjectId($this->getIdentifier($entity));
+    }
 
     /**
      * Gibt den Dateinamen für die übergebene EntityID zurück.
@@ -147,6 +152,12 @@ abstract class AbstractEntityManager implements ManagerInterface
         return null;
     }
 
+    /**
+     * Lädt eine Ressource anhand der URI
+     *
+     * @param $path
+     * @return mixed|null
+     */
     public function loadByResource($path)
     {
         $content = $this->getFileManager()->readFile($path);

@@ -15,6 +15,15 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+/**
+ * Dieser Controller implementiert alle Funktionen bezüglich der Routen
+ *
+ *  - /users/
+ *  - /users/{id}
+ *
+ * Das Mapping, welche Funktion auf welche Route und HTTP Methode gerufen wird, geschieht
+ * in der getRoutes() Funktion.
+ */
 class UserController implements UrlGeneratorAwareInterface
 {
     /** @var  UserManager */
@@ -41,8 +50,9 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
+     * Diese Funktion beschreibt GET /users/
+     *
      * @return array
-     * @throws \Htwdd\Chessapi\Exception\NotFoundException
      */
     public function listAction(Request $request)
     {
@@ -66,6 +76,13 @@ class UserController implements UrlGeneratorAwareInterface
         return $this->prepareResponseReturn($retVal, $request);
     }
 
+    /**
+     * Diese Funktion beschreibt POST /users/
+     *
+     * @param Request $request
+     * @param Response $response
+     * @return array|Hal
+     */
     public function createAction(Request $request, Response $response)
     {
         $user = new User();
@@ -110,6 +127,8 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
+     * Diese Funktion beschreibt GET /users/{id}
+     *
      * @param integer $id
      * @return array
      * @throws NotFoundHttpException wenn der Benutzer nicht gefunden werden konnte.
@@ -126,6 +145,8 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
+     * Diese Funktion beschreibt PUT /users/{id}
+     *
      * @param Request $request
      * @param integer $id
      */
@@ -167,6 +188,8 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
+     * Diese Funktion beschreibt POST /users/{id}
+     *
      * @param Request $request
      * @param integer $id
      */
@@ -194,6 +217,8 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
+     * Diese Funktion beschreibt DELETE /users/{id}
+     *
      * @param integer $id
      * @return Response
      */
@@ -210,6 +235,8 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
+     * Diese Funktion bereitet die Daten der Action Funktionen auf.
+     *
      * @param mixed $data
      * @param Request $request
      * @return array|Hal
@@ -217,23 +244,34 @@ class UserController implements UrlGeneratorAwareInterface
     protected function prepareResponseReturn($data, Request $request)
     {
         if ($data instanceof User) {
-            $matchArray = (new UserTransformer())->toArray($data);
+            // Wenn von einer Aktion ein User Objekt zurückgegeben wurde,
+            // dann soll eine Detailansicht der Ressource zurückgegeben werden.
+            // Entsprechend erstellen wir diese durch den UserTransformer.
+            $userArray = (new UserTransformer())->toArray($data);
             if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
-                return $matchArray;
+                // Bei einer HTML Ansicht wird das Array direkt zurückgegeben und in den Twig-Templates
+                // zum rendern der HTML Ansichten verwendet.
+                // Das Embedding wird in der HTML Ansicht nicht vorgesehen.
+                return $userArray;
             } else {
+                // Sonstige Formate werden durch den Hypertext Application Language Layer behandelt.
                 $hal = new Hal(
                     $request->getPathInfo(),
-                    $matchArray
+                    $userArray
                 );
 
+                // Dabei wird auch das Embedding mit beachtet.
                 $this->handleEmbedding($request, $hal);
 
                 return $hal;
             }
         }
 
+        // Wenn die Daten ein Array sind, so ist die Rückgabe eine Listenansicht
         if (is_array($data)) {
             if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
+                // Für die HTML Listenansicht werden URIs der Matches ausgelesen
+                // und für die Twig Engine als Array zurückgegeben
                 $retVal = [];
 
                 foreach ($data as $dataDetails) {
@@ -242,11 +280,13 @@ class UserController implements UrlGeneratorAwareInterface
 
                 return $retVal;
             } else {
+                // Für alle anderen Formate werden die Links durch der HAL Layer abgebildet.
                 $hal = new Hal($request->getPathInfo());
                 foreach ($data as $dataDetails) {
                     $hal->addLink($dataDetails['ref'], $dataDetails['link'], array(), true);
                 }
 
+                // Embedding von SubRessourcen
                 $this->handleEmbedding($request, $hal);
 
                 return $hal;
@@ -257,39 +297,74 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
+     * Diese Funktion kümmert sich um das Embedding von Ressourcen anhand der Queryparameter des Requests.
+     *
+     * @todo Könnte besser gelöst werden, indem das generisch im VIEW Event behandelt wird.
+     *       Dabei könnte ein SubRequest durch den HTTP Kernel an den Detailendpunkt gesendet werden.
+     *
      * @param Request $request
-     * @param Hal $halResource
+     * @param Hal $hal
      */
-    protected function handleEmbedding(Request $request, Hal $hal) {
+    protected function handleEmbedding(Request $request, Hal $hal)
+    {
         $implyEmbed = false;
+
+        // Parsen der Query Parameter und aktivieren des Embeddings
         foreach ($request->query as $name => $value) {
             // handle embedding
             if (strpos($name, 'embed') !== false) {
                 $implyEmbed = true;
             }
         }
+
         if ($implyEmbed) {
             $userTransformer = new UserTransformer();
-            $embedding = [];
-            foreach ($hal->getLinks() as $rel => $halLinkCollection) {
-                if ($rel === 'user') {
-                    foreach ($halLinkCollection as $halLink) {
-                        /** @var HalLink $halLink */
-                        $user = $this->getUserManager()->loadByResource($halLink->getUri());
-                        if ($user) {
-                            $embedding[$halLink->getUri()] = $userTransformer->toArray($user);
-                        }
+            $embedding = []; // Enthält URI => Ressourcendarstellung
+            $links = $hal->getLinks(); // alle _links
+            if (array_key_exists('match', $links)) {
+                /*
+                 * Wenn Verlinkungen der Relation match existieren (vgl ::prepareResponseReturn),
+                 * dann wollen wir diese Embedden, da $embed['resource'] gesetzt wurde.
+                 */
+                foreach ($links['user'] as $halLink) {
+                    /** @var HalLink $halLink */
+                    // Wir versuchen den User anhand der URI zu laden
+                    $user = $this->getUserManager()->loadByResource($halLink->getUri());
+                    if ($user) {
+                        // War das erfolgreich, speicher wir dessen Detailansicht anhand der URI in $embedding.
+                        $embedding[$halLink->getUri()] = $userTransformer->toArray($user);
                     }
                 }
             }
-            $data = $hal->getData();
-            $data['_embedded'] = $embedding;
-            $hal->setData($data);
+
+            if ($embedding) {
+                // Sofern es Daten zu embedden gibt, werden diese in _embedded geschrieben.
+                $data = $hal->getData();
+                $data['_embedded'] = $embedding;
+                $hal->setData($data);
+            }
         }
     }
 
     /**
-     * Routing Setup des User Controllers.
+     * Diese Funktion beschreibt alle Route, die von diesem Controller bedient werden.
+     *
+     * Zugleich werde die Restriktionen und Dokumentation der einzelnen Endpunkte definiert.
+     *
+     * Keys und deren Bedeutung:
+     *      - method: Dieser Key beschreibt einen im System registrierten Service und dessen Funktion,
+     *               die beim Aufrufen der Route sich um die abarbeitung des Requests kümmert.
+     *      - description: Beschreibt, was die Funktion macht.
+     *      - returnValues: Welche Statuscodes werden von dieser Funktion zurückgegeben und welche,
+     *                      Bedeutung haben diese im Kontext der gerufenen Funktion
+     *      - content-types: Wird dieser Key angegeben, so wird die Kommunikation mit diesen Endpunkten,
+     *                       auf diese Formate beschränkt. Meist wird dies bei schreibenden Methoden benötigt.
+     *      - parameters: Definiert die Daten, die dieser Endpunkt erwartet.
+     *      - example: Ein Beispiel für die definierten Parameter.
+     *      - before: Eine Closure, welche ausgeführt werden soll bevor die definirte Methode gerufen wird.
+     *      - after: Eine Closure, welche ausgeführt werden soll nachdem die definirte Methode gerufen wurde.
+     *      - convert: Eine Closure, welche die übergebenen Parameter verarbeitet/konvertiert.
+     *
      * @return array
      */
     public static function getRoutes()

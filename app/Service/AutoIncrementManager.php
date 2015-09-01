@@ -4,6 +4,9 @@ namespace Htwdd\Chessapi\Service;
 
 use Htwdd\Chessapi\Exception\AutoIncrementException;
 
+/**
+ * Diese Klasse setzt einen AutoIncrement Mechanismus auf Dateisystemebene um.
+ */
 class AutoIncrementManager {
     /** @var FileManager  */
     private $fileManager;
@@ -36,6 +39,8 @@ class AutoIncrementManager {
      */
     public function setAutoIncrement($object, $idProperty, $autoIncrement)
     {
+        // Da die ID eigentlich private ist müssen wir diese für die Operation
+        // über die Reflection API beschreibbar machen.
         $reflect = new \ReflectionClass($object);
         $reflectProperty = $reflect->getProperty($idProperty);
         $reflectProperty->setAccessible(true);

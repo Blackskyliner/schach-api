@@ -4,6 +4,9 @@ namespace Htwdd\Chessapi;
 
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
+/**
+ * Trait - Implementierung des UrlGeneratorAwareInterface
+ */
 trait UrlGeneratorAwareTrait
 {
     /** @var UrlGeneratorInterface */

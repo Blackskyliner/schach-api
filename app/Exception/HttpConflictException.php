@@ -5,9 +5,18 @@ namespace Htwdd\Chessapi\Exception;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+/**
+ * Diese Exception repräsentiert im System ein HTTP 409.
+ * Dabei können Konfliktinformationen übergeben werden,
+ * welche in der Antwort dem Konsumenten der API mittgeteilt werden.
+ */
 class HttpConflictException extends HttpException
 {
+    /**
+     * @var array
+     */
     protected $conflictInformation;
+
     /**
      * HttpConflictException constructor.
      */
@@ -16,7 +25,6 @@ class HttpConflictException extends HttpException
         $message,
         $property = null,
         $developerMessage = null,
-        //$moreInfo = null,
         $status = Response::HTTP_CONFLICT,
         \Exception $previous = null,
         array $headers = array(),
@@ -28,7 +36,6 @@ class HttpConflictException extends HttpException
             'property' => $property,
             'message' => $message,
             'developerMessage' => $developerMessage,
-            //'moreInfo' => $moreInfo
         ];
 
         $exceptionMessage = sprintf(
@@ -47,14 +54,15 @@ class HttpConflictException extends HttpException
             $exceptionMessage .=  sprintf('Developer Information: %s', $developerMessage).PHP_EOL;
         }
 
-        /*if ($moreInfo !== null) {
-            $exceptionMessage .=  sprintf('More Information: %s', $moreInfo).PHP_EOL;
-        }*/
-
-
         parent::__construct($status, $exceptionMessage, $previous, $headers, $exceptionCode);
     }
 
+    /**
+     * Ermöglicht den Zugriff auf die Konfliktinformationen.
+     * Damit muss die message nicht erst umständlich geparst werden.
+     *
+     * @return array
+     */
     public function getConflicInformation()
     {
         return $this->conflictInformation;

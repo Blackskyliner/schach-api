@@ -22,21 +22,36 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Class MatchController
- * @package Htwdd\Chessapi\Controller
+ * Dieser Controller implementiert alle Funktionen bezüglich der Routen
  *
- * TODO: fix history for empty lines!!!!!!!
+ *  - /match/
+ *  - /match/{id}
  *
+ * Das Mapping, welche Funktion auf welche Route und HTTP Methode gerufen wird, geschieht
+ * in der getRoutes() Funktion.
  */
 class MatchController implements UrlGeneratorAwareInterface
 {
-    /** @var  MatchManager */
+    /**
+     * Der Matchmanager wird benötigt, um ein Match laden zu können.
+     *
+     * @var MatchManager
+     */
     private $matchManager;
 
-    /** @var  UserManager */
+    /**
+     * Der Usermanager wird aufgrund des Embeddings benötigt.
+     * Da dafür die Benutzerdaten geladen werden müssen.
+     *
+     * @var UserManager
+     */
     private $userManager;
 
-    /** @var ChessService  */
+    /**
+     * Der ChessService ist für die Validierung der Spielzüge verantwortlich.
+     *
+     * @var ChessService
+     */
     private $chessService;
 
     /** Importiere standard Getter/Setter für das RouterAwareInterface */
@@ -44,7 +59,10 @@ class MatchController implements UrlGeneratorAwareInterface
 
     /**
      * MatchController constructor.
+     *
      * @param MatchManager $matchManager
+     * @param UserManager $userManager
+     * @param ChessService $chessService
      */
     public function __construct(MatchManager $matchManager, UserManager $userManager, ChessService $chessService)
     {
@@ -61,7 +79,6 @@ class MatchController implements UrlGeneratorAwareInterface
         return $this->matchManager;
     }
 
-
     /**
      * @return UserManager
      */
@@ -70,28 +87,13 @@ class MatchController implements UrlGeneratorAwareInterface
         return $this->userManager;
     }
 
-
-    public function listAction(Request $request)
-    {
-        $retVal = [];
-        foreach ($this->getMatchManager()->listAll() as $matchId) {
-            try {
-                $link = $this->getUrlGenerator()->generate(
-                    'match_detail',
-                    ['id' => $matchId]
-                );
-
-                $retVal[] = [
-                    'ref' => 'match',//:'.$matchId,
-                    'link' => $link
-                ];
-            } catch (\InvalidArgumentException $e) {
-            }
-        }
-
-        return $this->prepareResponseReturn($retVal, $request);
-    }
-
+    /**
+     * Diese Methode prüft, ob die übergebene URI einem Benutzer im System entspricht.
+     *
+     * @param string $uri zu einem Benutzer
+     * @throws HttpConflictException wenn der Benutzer nicht existiert.
+     * @return bool
+     */
     private function checkUser($uri)
     {
         $resource = $this->userManager->loadByResource($uri);
@@ -109,7 +111,11 @@ class MatchController implements UrlGeneratorAwareInterface
     }
 
     /**
+     * Diese Methode prüft, ob das übergebene Match eine gültige Schachhistorie besitzt.
+     *
      * @param Match $match
+     * @throws HttpConflictException wenn ein ungültiger Zug entdeckt wurde.
+     * @return bool
      */
     private function checkMatch(Match $match)
     {
@@ -127,35 +133,110 @@ class MatchController implements UrlGeneratorAwareInterface
 
         return true;
     }
+
+    /**
+     * Diese Funktion macht aus einer History, welche über einen Request in die Funktionen gegeben werden,
+     * ein Array, welches direkt in ein Match gegeben werden kann.
+     *
+     * @param string|array $history
+     * @returns array
+     */
+    private function unpackHistory($history)
+    {
+        /*
+         * Die Historie wird als array gespeichert.
+         * Bei der Übertragung wird davon ausgegangen, dass einzelne Züge der Historie
+         * durch eine NEWLINE (\n) getrennt sind.
+         * Dieses Verhalten entspricht dabei einer HTML Textbox.
+         *
+         * Entsprechend muss diese übergabe von Leerzeichen und \r befreit werden,
+         * da diese in der SchachEngine sonst zu Problemen führen könnten.
+         */
+        if (is_array($history)) {
+            return $history;
+        } else {
+            return explode(
+                "\n",
+                str_replace(
+                    array("\r", ' '),
+                    array('', ''),
+                    $history
+                )
+            );
+        }
+    }
+
+    /**
+     * Diese Funktion beschreibt GET /matches/
+     *
+     * @param Request $request
+     * @return array|Hal
+     */
+    public function listAction(Request $request)
+    {
+        $retVal = [];
+        // Es werden alle Matches über den manager geholt
+        foreach ($this->getMatchManager()->listAll() as $matchId) {
+            try {
+                // Dann wird die URI zur Detailansicht generiert.
+                $link = $this->getUrlGenerator()->generate(
+                    'match_detail',
+                    ['id' => $matchId]
+                );
+
+                // Das Format des Arrays wird in prepareResponseReturn ausgewertet.
+                $retVal[] = [
+                    'ref' => 'match',
+                    'link' => $link
+                ];
+            } catch (\InvalidArgumentException $e) {
+                // Sollte eine ungültige URI generiert werden so wird dieser Eintrag verworfen.
+            }
+        }
+
+        return $this->prepareResponseReturn($retVal, $request);
+    }
+
+    /**
+     * Diese Funktion beschreibt POST /matches/
+     *
+     * @param Request $request
+     * @param Response $response
+     * @return array|Hal
+     */
     public function createAction(Request $request, Response $response)
     {
+        // Alle Parameter aus dem Request auslesen
         $white = $request->request->get('white', null);
         $black = $request->request->get('black', null);
         $start = $request->request->get('start', null);
         $history = $request->request->get('history', []);
 
-        if ($white) {
-            $this->checkUser($white);
-        }
-        if ($black) {
-            $this->checkUser($black);
-        }
-
+        // Erstellen einer neuen Partie und setzen der übergebenen Parameter
         $match = new Match();
-        $match->setBlack($black);
-        $match->setWhite($white);
+
+        // Sofern die Spieler angegeben wurden, müssen diese auf Gültigkeit überprüft werden
+        if ($white && $this->checkUser($white)) {
+            $match->setWhite($white);
+        }
+        if ($black && $this->checkUser($black)) {
+            $match->setBlack($black);
+        }
 
         if ($start) {
             $match->setStart($start);
         }
 
         if ($history) {
-            $match->setHistory(explode("\n", str_replace("\r", '', $history)));
+            $match->setHistory($this->unpackHistory($history));
         }
 
-        $this->checkMatch($match);
-
-        if ($this->getMatchManager()->save($match)) {
+        // Wir prüfen auf die Gültigkeit der Schachzüge und speichern das Match, wenn diese gültig sind.
+        if ($this->checkMatch($match) && $this->getMatchManager()->save($match)) {
+            /*
+             * Sollte das Speichern erfolgreich sein, so wird der Status der Antwort auf 201 CREATED gesetzt.
+             * Zudem wird die Route zum Detailendpunkt generiert und als Location Header der Antwort hinzugefügt.
+             */
             $response->setStatusCode(Response::HTTP_CREATED);
             $response->headers->set(
                 'Location',
@@ -168,9 +249,18 @@ class MatchController implements UrlGeneratorAwareInterface
             return $this->prepareResponseReturn($match, $request);
         }
 
+        // Hier landet man nur, wenn das Speichern nicht erfolgreich war.
+        // Es wird ein interner Serverfehler (500) geworfen.
         throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
+    /**
+     * Diese Funktion beschreibt GET /matches/{id}
+     *
+     * @param Request $request
+     * @param $id
+     * @return array|Hal
+     */
     public function detailAction(Request $request, $id)
     {
         $match = $this->getMatchManager()->load($id);
@@ -181,6 +271,14 @@ class MatchController implements UrlGeneratorAwareInterface
 
         throw new NotFoundHttpException('Could not find match '.$id);
     }
+
+    /**
+     * Diese Funktion beschreibt POST /matches/{id}
+     *
+     * @param Request $request
+     * @param $id
+     * @return array|Hal
+     */
     public function updateAction(Request $request, $id)
     {
         /** @var Match $match */
@@ -204,7 +302,7 @@ class MatchController implements UrlGeneratorAwareInterface
             $match->setStart($start);
         }
         if ($history) {
-            $match->setHistory(explode("\n", str_replace("\r", '', $history)));
+            $match->setHistory($this->unpackHistory($history));
         } else {
             if ($start) {
                 $match->setHistory(array());
@@ -217,6 +315,14 @@ class MatchController implements UrlGeneratorAwareInterface
 
         throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
     }
+
+    /**
+     * Diese Funktion beschreibt PUT /matches/{id}
+     *
+     * @param Request $request
+     * @param $id
+     * @return array|Hal
+     */
     public function replaceAction(Request $request, $id)
     {
         /** @var Match $match */
@@ -227,6 +333,7 @@ class MatchController implements UrlGeneratorAwareInterface
         $history = $request->request->get('history', []);
 
         if (!$match) {
+            // Sollte kein Match gefunden werden, so wird eines mit der in der URI angegebene ID angelegt
             $match = new Match();
             $this->matchManager->setIdentifier($match, $id);
         }
@@ -241,7 +348,7 @@ class MatchController implements UrlGeneratorAwareInterface
             $match->setStart($start);
         }
         if ($history) {
-            $match->setHistory(explode("\n", str_replace("\r", '', $history)));
+            $match->setHistory($this->unpackHistory($history));
         }
 
         if ($this->checkMatch($match) && $this->matchManager->save($match)) {
@@ -251,6 +358,13 @@ class MatchController implements UrlGeneratorAwareInterface
         throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
+    /**
+     * Diese Funktion beschreibt DELETE /matches/{id}
+     *
+     * @param Request $request
+     * @param $id
+     * @return array|Hal
+     */
     public function deleteAction(Request $request, $id)
     {
         /** @var Match $match */
@@ -266,6 +380,13 @@ class MatchController implements UrlGeneratorAwareInterface
         throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
+    /**
+     * Diese Funktion beschreibt PATCH /matches/{id}
+     *
+     * @param Request $request
+     * @param $id
+     * @return array|Hal
+     */
     public function patchAction(Request $request, $id)
     {
         /** @var Match $match */
@@ -285,6 +406,8 @@ class MatchController implements UrlGeneratorAwareInterface
     }
 
     /**
+     * Diese Funktion bereitet die Daten der Action Funktionen auf.
+     *
      * @param mixed $data
      * @param Request $request
      * @return array|Hal
@@ -292,23 +415,34 @@ class MatchController implements UrlGeneratorAwareInterface
     protected function prepareResponseReturn($data, Request $request)
     {
         if ($data instanceof Match) {
+            // Wenn von einer Aktion ein Match Objekt zurückgegeben wurde,
+            // dann soll eine Detailansicht der Ressource zurückgegeben werden.
+            // Entsprechend erstellen wir diese durch den MatchTransformer.
             $matchArray = (new MatchTransformer())->toArray($data);
             if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
+                // Bei einer HTML Ansicht wird das Array direkt zurückgegeben und in den Twig-Templates
+                // zum rendern der HTML Ansichten verwendet.
+                // Das Embedding wird in der HTML Ansicht nicht vorgesehen.
                 return $matchArray;
             } else {
+                // Sonstige Formate werden durch den Hypertext Application Language Layer behandelt.
                 $hal = new Hal(
                     $request->getPathInfo(),
                     $matchArray
                 );
 
+                // Dabei wird auch das Embedding mit beachtet.
                 $this->handleEmbedding($request, $hal);
 
                 return $hal;
             }
         }
 
+        // Wenn die Daten ein Array sind, so ist die Rückgabe eine Listenansicht
         if (is_array($data)) {
             if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
+                // Für die HTML Listenansicht werden URIs der Matches ausgelesen
+                // und für die Twig Engine als Array zurückgegeben
                 $retVal = [];
 
                 foreach ($data as $dataDetails) {
@@ -317,11 +451,13 @@ class MatchController implements UrlGeneratorAwareInterface
 
                 return $retVal;
             } else {
+                // Für alle anderen Formate werden die Links durch der HAL Layer abgebildet.
                 $hal = new Hal($request->getPathInfo());
                 foreach ($data as $dataDetails) {
                     $hal->addLink($dataDetails['ref'], $dataDetails['link'], array(), true);
                 }
 
+                // Embedding von SubRessourcen
                 $this->handleEmbedding($request, $hal);
 
                 return $hal;
@@ -332,18 +468,22 @@ class MatchController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Fügt die Ressourcen direkt in den HAL Response hinzu.
+     * Diese Funktion kümmert sich um das Embedding von Ressourcen anhand der Queryparameter des Requests.
      *
-     * Könnte besser gelöst werden, indem das generisch im VIEW Event behandelt wird.
-     * Dabei könnte ein SubRequest durch den HTTP Kernel an den Detailendpunkt gesendet werden.
+     * @todo Könnte besser gelöst werden, indem das generisch im VIEW Event behandelt wird.
+     *       Dabei könnte ein SubRequest durch den HTTP Kernel an den Detailendpunkt gesendet werden.
      *
      * @param Request $request
-     * @param Hal $halResource
+     * @param Hal $hal
      */
-    protected function handleEmbedding(Request $request, Hal $hal) {
+    protected function handleEmbedding(Request $request, Hal $hal)
+    {
+        // Diese Parameter definieren, was embedded werden soll
         $embed['resource'] = false;
         $embed['white'] = false;
         $embed['black'] = false;
+
+        // Parsen der Query Parameter und aktivieren der jeweils zutreffenden embedding Parameter
         foreach ($request->query as $name => $value) {
             // handle embedding
             if (strpos($name, 'embed') !== false) {
@@ -359,37 +499,55 @@ class MatchController implements UrlGeneratorAwareInterface
                 }
             }
         }
+
         if ($embed['resource']) {
             $userTransformer = new UserTransformer();
             $matchTransformer = new MatchTransformer();
-            $embedding = [];
-            foreach ($hal->getLinks() as $rel => $halLinkCollection) {
-                if ($rel === 'match') {
-                    foreach ($halLinkCollection as $halLink) {
-                        /** @var HalLink $halLink */
-                        /** @var Match $match */
-                        $match = $this->getMatchManager()->loadByResource($halLink->getUri());
-                        if ($match) {
-                            $embedding[$halLink->getUri()] = $matchTransformer->toArray($match);
-                            if ($embed['white']
-                             && $match->getWhite()
-                             && !array_key_exists($match->getWhite(), $embedding)
-                            ) {
-                                $user = $this->getUserManager()->loadByResource($match->getWhite());
-                                $embedding[$match->getWhite()] = $userTransformer->toArray($user);
-                            }
-                            if ($embed['black']
-                             && $match->getBlack()
-                             && !array_key_exists($match->getBlack(), $embedding)
-                            ) {
-                                $user = $this->getUserManager()->loadByResource($match->getBlack());
-                                $embedding[$match->getBlack()] = $userTransformer->toArray($user);
-                            }
+            $embedding = []; // Enthält URI => Ressourcendarstellung
+            $links = $hal->getLinks(); // alle _links
+
+            if (array_key_exists('match', $links)) {
+                /*
+                 * Wenn Verlinkungen der Relation match existieren (vgl ::prepareResponseReturn),
+                 * dann wollen wir diese Embedden, da $embed['resource'] gesetzt wurde.
+                 */
+                foreach ($links['match'] as $halLink) {
+                    /** @var HalLink $halLink */
+                    /** @var Match $match */
+
+                    // Wir versuchen das Match anhand der URI zu laden
+                    $match = $this->getMatchManager()->loadByResource($halLink->getUri());
+                    if ($match) {
+                        // War das erfolgreich, speicher wir dessen Detailansicht anhand der URI in $embedding.
+                        $embedding[$halLink->getUri()] = $matchTransformer->toArray($match);
+
+                        // danach prüfen wir ob white und black im Match gesetzt sind.
+                        if ($embed['white']
+                         && $match->getWhite()
+                         && !array_key_exists($match->getWhite(), $embedding)
+                        ) {
+                            // Sofern white definiert ist, laden wir anhand der URI den User
+                            // und fügen dessen Detailansicht analog in $embedding hinzu.
+                            $user = $this->getUserManager()->loadByResource($match->getWhite());
+                            $embedding[$match->getWhite()] = $userTransformer->toArray($user);
+                        }
+                        if ($embed['black']
+                         && $match->getBlack()
+                         && !array_key_exists($match->getBlack(), $embedding)
+                        ) {
+                            // analog white
+                            $user = $this->getUserManager()->loadByResource($match->getBlack());
+                            $embedding[$match->getBlack()] = $userTransformer->toArray($user);
                         }
                     }
                 }
             }
+
             if ($data = $hal->getData()) {
+                // Diser Fall ermöglicht das embedding in der Detailansicht.
+                // Bzw. in einer Funktion, welche eine Detailansicht zurückzugeben versucht.
+                // Entsprechend laden wir analog zu Listenansicht die Benutzer
+                // der in $data gesetzten Detailansicht.
                 if ($embed['white']
                     && array_key_exists('white', $data)
                     && $data['white']
@@ -407,6 +565,8 @@ class MatchController implements UrlGeneratorAwareInterface
                     $embedding[$data['black']] = $userTransformer->toArray($user);
                 }
             }
+
+            // Sofern es Daten zu embedden gibt, werden diese in _embedded geschrieben.
             if ($embedding) {
                 $data = $hal->getData();
                 $data['_embedded'] = $embedding;
@@ -416,7 +576,24 @@ class MatchController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Routing Setup des User Controllers.
+     * Diese Funktion beschreibt alle Route, die von diesem Controller bedient werden.
+     *
+     * Zugleich werde die Restriktionen und Dokumentation der einzelnen Endpunkte definiert.
+     *
+     * Keys und deren Bedeutung:
+     *      - method: Dieser Key beschreibt einen im System registrierten Service und dessen Funktion,
+     *               die beim Aufrufen der Route sich um die abarbeitung des Requests kümmert.
+     *      - description: Beschreibt, was die Funktion macht.
+     *      - returnValues: Welche Statuscodes werden von dieser Funktion zurückgegeben und welche,
+     *                      Bedeutung haben diese im Kontext der gerufenen Funktion
+     *      - content-types: Wird dieser Key angegeben, so wird die Kommunikation mit diesen Endpunkten,
+     *                       auf diese Formate beschränkt. Meist wird dies bei schreibenden Methoden benötigt.
+     *      - parameters: Definiert die Daten, die dieser Endpunkt erwartet.
+     *      - example: Ein Beispiel für die definierten Parameter.
+     *      - before: Eine Closure, welche ausgeführt werden soll bevor die definirte Methode gerufen wird.
+     *      - after: Eine Closure, welche ausgeführt werden soll nachdem die definirte Methode gerufen wurde.
+     *      - convert: Eine Closure, welche die übergebenen Parameter verarbeitet/konvertiert.
+     *
      * @return array
      */
     public static function getRoutes()
@@ -469,8 +646,10 @@ class MatchController implements UrlGeneratorAwareInterface
                         'black' => '/users/2',
                         'start' => $dummy->getStart(),
                         'history' => [
-                            'e2-e4',
-                            'f7-f6'
+                            'e4',
+                            'd6',
+                            'd4',
+                            'g6'
                         ]
                     ],
                     'returnValues' => [
@@ -529,8 +708,10 @@ class MatchController implements UrlGeneratorAwareInterface
                         'black' => '/users/2',
                         'start' => $dummy->getStart(),
                         'history' => [
-                            'e2-e4',
-                            'f7-f6'
+                            'e4',
+                            'd6',
+                            'd4',
+                            'g6'
                         ]
                     ],
                     'returnValues' => [
@@ -579,8 +760,10 @@ class MatchController implements UrlGeneratorAwareInterface
                         'black' => '/users/2',
                         'start' => $dummy->getStart(),
                         'history' => [
-                            'e2-e4',
-                            'f7-f6'
+                            'e4',
+                            'd6',
+                            'd4',
+                            'g6'
                         ]
                     ],
                     'returnValues' => [

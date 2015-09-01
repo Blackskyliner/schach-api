@@ -1,10 +1,9 @@
 <?php
 
 namespace Htwdd\Chessapi\Service;
-use Htwdd\Chessapi\Exception\NotFoundException;
 
 /**
- * Interface ManagerInterface
+ * Interface für einen manager, der die im System vorhandenen Entitäten verwalten kann.
  */
 interface ManagerInterface{
     /**

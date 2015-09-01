@@ -4,12 +4,23 @@ namespace Htwdd\Chessapi\Entity;
 
 class User
 {
+    /**
+     * @var integer
+     */
     protected $id;
+
+    /**
+     * @var string
+     */
     protected $name;
+
+    /**
+     * @var string SHA1 gehashtes Passwort
+     */
     protected $password;
 
     /**
-     * @return mixed
+     * @return integer
      */
     public function getId()
     {
@@ -17,7 +28,7 @@ class User
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getName()
     {
@@ -25,7 +36,7 @@ class User
     }
 
     /**
-     * @param mixed $name
+     * @param string $name
      */
     public function setName($name)
     {
@@ -33,7 +44,7 @@ class User
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getPassword()
     {
@@ -41,7 +52,7 @@ class User
     }
 
     /**
-     * @param mixed $password
+     * @param string $password
      */
     public function setPassword($password)
     {

@@ -5,10 +5,13 @@ namespace Htwdd\Chessapi;
 use Symfony\Component\HttpFoundation\Request;
 use Silex\ControllerResolver as BaseResolver;
 
+/**
+ * @inheritdoc
+ */
 class ControllerResolver extends BaseResolver
 {
     /**
-     * Originale Funktionsweise um eine Response Injection erweitert.
+     * Originale Funktionsweise um eine Response und Kernel Injection erweitert.
      *
      * @param Request $request
      * @param string $controller

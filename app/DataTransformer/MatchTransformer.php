@@ -6,10 +6,19 @@ use Htwdd\Chessapi\Entity\Match;
 use Htwdd\Chessapi\UrlGeneratorAwareInterface;
 use Htwdd\Chessapi\UrlGeneratorAwareTrait;
 
-class MatchTransformer implements UrlGeneratorAwareInterface
+/**
+ * Dieser Datentransformer beschreibt die öffentlicher Ressourcendarstellung
+ * einer Partie, bzw. eines Matches
+ */
+class MatchTransformer
 {
-    use UrlGeneratorAwareTrait;
-
+    /**
+     * Diese Funktion wandelt ein Match Objekt in ein Array um.
+     * Dabei werden nur die für die öffentliche Darstellung definierten Felder zurückgegeben.
+     *
+     * @param Match $match
+     * @return array
+     */
     public function toArray(Match $match)
     {
         return [

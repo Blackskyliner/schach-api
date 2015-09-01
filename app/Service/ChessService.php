@@ -5,6 +5,9 @@ namespace Htwdd\Chessapi\Service;
 use Chess\Game\ChessGame;
 use Htwdd\Chessapi\Exception\InvalidChessStateException;
 
+/**
+ * Dieser Service stellt Funktionen bereit, um eine Partie Schach zu verwalten.
+ */
 class ChessService
 {
     /** @var ChessGame  */
@@ -26,6 +29,12 @@ class ChessService
         $this->chessEngine = $chessEngine;
     }
 
+    /**
+     * Initialisiert die verwendete SchachEngine.
+     *
+     * @param $start
+     * @param array $history
+     */
     private function initEngine($start, array $history)
     {
         $this->chessEngine->resetGame(trim($start));
@@ -39,9 +48,11 @@ class ChessService
     }
 
     /**
-     * @param $start
-     * @param array $history
-     * @throws InvalidChessStateException if a move could not be made
+     * Validiert eine übergebene Schachsituation.
+     *
+     * @param string $start Startsituation in der FEN
+     * @param string[] $history Historie der Züge in SAN
+     * @throws InvalidChessStateException wenn die FEN ungültig ist oder einer der Züge.
      */
     public function validate($start, array $history)
     {
@@ -49,10 +60,12 @@ class ChessService
     }
 
     /**
-     * Rturns the current state of the game after applying all moves from the history
-     * @param $start
-     * @param array $history
-     * @throws InvalidChessStateException if a move could not be made
+     * Validiert und gibt die aktuelle Schachsituation nach dem Anwenden aller Züge zurück.
+     *
+     * @param string $start Startsituation in der FEN
+     * @param string[] $history Historie der Züge in SAN
+     * @throws InvalidChessStateException wenn die FEN ungültig ist oder einer der Züge.
+     * @return string
      */
     public function getCurrentFen($start, array $history)
     {

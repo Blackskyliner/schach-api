@@ -3,7 +3,8 @@
 namespace Htwdd\Chessapi\Service;
 
 /**
- * Dieses Interface spiegelt eine Schach-Engine innerhalb der API dar.
+ * Dieses Interface sollte von einer SchachEngine implementiert werden.
+ * Dabei kann diese nach der aktuellen "Meinung" der KI befragt werden.
  */
 interface ChessEngineInterface {
     const COST_MILLISECONDS = 0;

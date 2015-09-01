@@ -2,6 +2,10 @@
 
 namespace Htwdd\Chessapi\Service;
 
+/**
+ * Diese Klasse dient der Verwaltung von Dateien im Dateisystem.
+ * Dabei wird ein, beim erstellen des Objektes angegebenes, Verzeichnis verwaltet.
+ */
 class FileManager
 {
     private $directory;

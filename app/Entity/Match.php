@@ -2,12 +2,34 @@
 
 namespace Htwdd\Chessapi\Entity;
 
+/**
+ * Dieses Objekt repräsentiert eine Partie.
+ */
 class Match
 {
+    /**
+     * @var integer
+     */
     protected $id;
+
+    /**
+     * @var string URI zu einem User
+     */
     protected $white;
+
+    /**
+     * @var string URI zu einem User
+     */
     protected $black;
+
+    /**
+     * @var string Startsituation in FEN
+     */
     protected $start;
+
+    /**
+     * @var string[] Liste mit SAN Einträgen
+     */
     protected $history;
 
     /**
@@ -20,7 +42,7 @@ class Match
     }
 
     /**
-     * @return mixed
+     * @return integer
      */
     public function getId()
     {
@@ -28,7 +50,7 @@ class Match
     }
 
     /**
-     * @return
+     * @return string
      */
     public function getWhite()
     {
@@ -36,7 +58,7 @@ class Match
     }
 
     /**
-     * @param $white
+     * @param string $white
      */
     public function setWhite($white)
     {
@@ -44,7 +66,7 @@ class Match
     }
 
     /**
-     * @return
+     * @return string
      */
     public function getBlack()
     {

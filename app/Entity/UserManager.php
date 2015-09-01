@@ -4,22 +4,13 @@ namespace Htwdd\Chessapi\Entity;
 
 use Htwdd\Chessapi\Service\ManagerInterface;
 
+/**
+ * Diese Klasse kümmert sich um die Verwaltung der User Objekte im Dateisystem.
+ */
 class UserManager extends AbstractEntityManager
 {
     /** @var  MatchManager */
     protected $matchManager;
-
-    /**
-     * @inheritDoc
-     *
-     * @param User $entity
-     * TODO: durch neue methode im manager direkt im abstract ersetzen :D
-     *
-     */
-    protected function getFileNameForObject($entity)
-    {
-        return $this->getFileNameForObjectId($entity->getId());
-    }
 
     /**
      * @param MatchManager $manger
@@ -52,8 +43,6 @@ class UserManager extends AbstractEntityManager
                 $changed = true;
             }
 
-            // TODO: if a player gets deleted set the other player as winner?
-
             if ($changed) {
                 $this->matchManager->save($match);
             }
@@ -68,6 +57,7 @@ class UserManager extends AbstractEntityManager
      */
     protected function getEntityPath()
     {
+        // Dadurch bilden wir die Dateistruktur auf die URL Struktur ab.
         return 'users';
     }
 }

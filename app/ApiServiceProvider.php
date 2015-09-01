@@ -6,7 +6,6 @@ use Htwdd\Chessapi\Controller\DocumentationController;
 use Htwdd\Chessapi\Controller\MatchController;
 use Htwdd\Chessapi\Controller\RootController;
 use Htwdd\Chessapi\Controller\UserController;
-use Htwdd\Chessapi\Entity\Match;
 use Htwdd\Chessapi\Entity\MatchManager;
 use Htwdd\Chessapi\Entity\UserManager;
 use Htwdd\Chessapi\Exception\InvalidChessStateException;
@@ -20,11 +19,11 @@ use Silex\Provider\TwigServiceProvider;
 use Silex\Provider\UrlGeneratorServiceProvider;
 use Silex\ServiceProviderInterface;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Routing\Matcher\UrlMatcher;
-use Symfony\Component\Routing\Matcher\UrlMatcherInterface;
 
+/**
+ * Diese Funktion initialisert alle von dieser API zur verfügng gestellte Dienste in einer Silex Application.
+ */
 class ApiServiceProvider implements ServiceProviderInterface
 {
     /**
@@ -62,6 +61,8 @@ class ApiServiceProvider implements ServiceProviderInterface
 
             return $manager;
         });
+
+        // Registrieren aller Controller als Service
         $app['controller.match'] = $app->share(function () use ($app) {
             return new MatchController(
                 $app['manager.match'],
@@ -75,7 +76,7 @@ class ApiServiceProvider implements ServiceProviderInterface
         $app['controller.root'] = $app->share(function () use ($app) {
             return new RootController();
         });
-        $app['documentation'] = $app->share(function () use ($app) {
+        $app['controller.documentation'] = $app->share(function () use ($app) {
             return new DocumentationController();
         });
 

@@ -6,6 +6,7 @@ use Htwdd\Chessapi\Exception\AutoIncrementException;
 use Htwdd\Chessapi\Service\AutoIncrementManager;
 use Htwdd\Chessapi\Service\FileManager;
 use Htwdd\Chessapi\Service\ManagerInterface;
+use Symfony\Component\Routing\RequestContext;
 
 /**
  * Dieser Manager implementiert die Grundfunktionen des Managerinterfaces.
@@ -19,14 +20,20 @@ abstract class AbstractEntityManager implements ManagerInterface
     private $incrementManager;
 
     /**
+     * @var RequestContext
+     */
+    protected $requestContext;
+
+    /**
      * MatchManager constructor.
      *
      * @param FileManager $fm
      */
-    public function __construct(FileManager $fm, AutoIncrementManager $incrementManager)
+    public function __construct(FileManager $fm, AutoIncrementManager $incrementManager, RequestContext $rc)
     {
         $this->incrementManager = $incrementManager;
         $this->fileManager = $fm;
+        $this->requestContext = $rc;
     }
 
     /**
@@ -160,6 +167,11 @@ abstract class AbstractEntityManager implements ManagerInterface
      */
     public function loadByResource($path)
     {
+        // Strip base paths...
+        if ($this->requestContext->getBaseUrl()) {
+            $path = substr($path, strlen($this->requestContext->getBaseUrl()));
+        }
+
         $content = $this->getFileManager()->readFile($path);
         if ($content !== null) {
             return unserialize($content);

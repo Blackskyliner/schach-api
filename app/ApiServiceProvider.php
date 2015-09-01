@@ -46,7 +46,8 @@ class ApiServiceProvider implements ServiceProviderInterface
         $app['manager.user'] = $app->share(function () use ($app) {
             $manager = new UserManager(
                 $app['service.filemanager'],
-                $app['service.autoincrementmanager']
+                $app['service.autoincrementmanager'],
+                $app['request_context']
             );
 
             $manager->setMatchManager($app['manager.match']);
@@ -56,7 +57,8 @@ class ApiServiceProvider implements ServiceProviderInterface
         $app['manager.match'] = $app->share(function () use ($app) {
             $manager = new MatchManager(
                 $app['service.filemanager'],
-                $app['service.autoincrementmanager']
+                $app['service.autoincrementmanager'],
+                $app['request_context']
             );
 
             return $manager;

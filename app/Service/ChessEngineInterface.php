@@ -12,7 +12,8 @@ interface ChessEngineInterface {
     const COST_DEPTH = 2;
 
     /**
-     * @param string $fen Aktuelles Spielbrett in FEN Notation
+     * @param string $start Startsituation in FEN
+     * @param array $history Historie bereits getätigter Züge.
      * @param int $costType einer der vom Interface definierten COST_* Typen.
      * @param int $costValue wertigkeit des jeweiligen Kostentyps
      *
@@ -21,5 +22,5 @@ interface ChessEngineInterface {
      * @throws \InvalidArgumentException kann geworfen werden, wenn ein Kostentyp nicht unterstützt wird.
      * @throws \UnexpectedValueException wird geworfen, wenn die FEN ungültig ist.
      */
-    public function calculateBestMove($fen, $costType, $costValue);
+    public function calculateBestMove($start, array $history, $costType, $costValue);
 }

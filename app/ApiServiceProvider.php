@@ -10,6 +10,7 @@ use Htwdd\Chessapi\Entity\MatchManager;
 use Htwdd\Chessapi\Entity\UserManager;
 use Htwdd\Chessapi\Exception\InvalidChessStateException;
 use Htwdd\Chessapi\Service\AutoIncrementManager;
+use Htwdd\Chessapi\Service\ChenardEngine;
 use Htwdd\Chessapi\Service\ChessService;
 use Htwdd\Chessapi\Service\FileManager;
 use Nocarrier\HalLinkContainer;
@@ -82,8 +83,25 @@ class ApiServiceProvider implements ServiceProviderInterface
             return new DocumentationController();
         });
 
+        $app['service.chesski'] = $app->share(function () use ($app) {
+            if ($app['chenard']) {
+                return new ChenardEngine(
+                    $app['chenard']['server'],
+                    $app['chenard']['port']
+                );
+            }
+
+            return null;
+        });
+
         $app['service.chess'] = $app->share(function () use ($app) {
-            return new ChessService();
+            $chessService = new ChessService();
+
+            if ($app['service.chesski']) {
+                $chessService->setChessKi($app['service.chesski']);
+            }
+
+            return $chessService;
         });
 
         $app['hal_links'] = new HalLinkContainer();

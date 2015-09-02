@@ -19,7 +19,9 @@ if (!file_exists(VENDOR_ROOT)) {
 // Hole den Composer autoloader.
 $autoloader = require_once VENDOR_ROOT.'/autoload.php';
 
-$application = new Application();
+$application = new Application(
+    require_once 'configuration.php'
+);
 $application['debug'] = true;
 
 $application->register(new ApiServiceProvider());

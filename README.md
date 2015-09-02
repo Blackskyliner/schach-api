@@ -13,3 +13,13 @@ Zu Testzwecken kann alternativ der in PHP integrierte Server verwendet werden, u
 
 Das Verzeichnis data/ sollte durch den Webserver beschreibbar sein, 
 da dort die, von der API verwalteten, Daten abgelegt werden.
+
+# Zusatz
+
+Das Script bietet die Möglichkeit einer KI einen Zug bestimmen lassen zu können.
+Dafür muss ein Chenerver auf einem System vorhanden sein.
+    https://github.com/cosinekitty/chenard/wiki/ChenServer
+Da dieser einen eigenen globalen Zustand hält, eignet dieser sich nur für das Testen.
+Um für eine Partie die KI einen Zug machen zu lassen, kann der PATCH Endpunkt einer Partie verwendet werden.
+
+Die Konfiguration der KI kann in app/configuration.php vorgenommen werden.

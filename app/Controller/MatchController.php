@@ -18,6 +18,7 @@ use Nocarrier\HalLink;
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -396,6 +397,31 @@ class MatchController implements UrlGeneratorAwareInterface
         }
 
         $patch = $request->request->get('PATCH');
+        if (strpos($patch, 'KI') !== false) {
+            sscanf($patch, 'KI %d', $millisec);
+            if ($millisec) {
+                $move = $this->chessService->think(
+                    $match->getStart(),
+                    $match->getHistory(),
+                    $millisec
+                );
+                if ($move) {
+                    if ($move === 'GAME_OVER') {
+                        throw new HttpConflictException(
+                            '30002',
+                            'The game has already ended.'
+                        );
+                    }
+
+                    $patch = $move;
+                } else {
+                    throw new HttpConflictException(
+                        '30001',
+                        'The KI could not think of an valid move.'
+                    );
+                }
+            }
+        }
         $match->addHistory($patch);
 
         if ($this->checkMatch($match) && $this->getMatchManager()->save($match)) {
@@ -780,7 +806,10 @@ class MatchController implements UrlGeneratorAwareInterface
                     'content-types' => [
                         'text/san',
                     ],
-                    'description' => 'Fügt einen Zug in der SAN zu den Zügen der Partie hinzu.',
+                    'description' => 'Fügt einen Zug in der SAN zu den Zügen der Partie hinzu. '.
+                        'Sollte eine KI konfiguriert sein, '.
+                        'so kann man diese einen Zug spielen lassen, indem man "KI 1000" als Notation eingibt. '.
+                        'Die 1000 steht dabei für 1000ms Bedenkzeit.',
                     'example' => 'e4',
                     'returnValues' => [
                         Response::HTTP_OK => 'Die Partie wurde erfolgreich aktualisiert und '.

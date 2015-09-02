@@ -13,6 +13,10 @@ class ChessService
     /** @var ChessGame  */
     private $chessEngine;
 
+    /** @var  ChessEngineInterface */
+    private $kiEngine;
+
+
     /**
      * ChessService constructor.
      */
@@ -27,6 +31,14 @@ class ChessService
     public function setChessEngine(ChessGame $chessEngine)
     {
         $this->chessEngine = $chessEngine;
+    }
+
+    /**
+     * @param ChessEngineInterface $kiEngine
+     */
+    public function setChessKi(ChessEngineInterface $kiEngine)
+    {
+        $this->kiEngine = $kiEngine;
     }
 
     /**
@@ -71,5 +83,32 @@ class ChessService
     {
         $this->initEngine($start, $history);
         return $this->chessEngine->renderFen();
+    }
+
+    /**
+     * Fragt eine SchachKI nach dem nächsten Zug.
+     * Gibt numm zurück, wenn kein Zug gefunden wurde, bzw. die KI nicht konfiguriert/erreichbar ist.
+     *
+     * @param $start
+     * @param array $history
+     * @param $time
+     *
+     * @return string|null Bester Zug oder NULL
+     */
+    public function think($start, array $history, $time)
+    {
+        if ($this->kiEngine) {
+            try {
+                return $this->kiEngine->calculateBestMove(
+                    $start,
+                    $history,
+                    ChessEngineInterface::COST_MILLISECONDS,
+                    $time
+                );
+            } catch(\Exception $e) {
+            }
+        }
+
+        return null;
     }
 }

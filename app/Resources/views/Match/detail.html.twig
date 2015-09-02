@@ -38,8 +38,12 @@
     </form>
 
     <h2>Einen Zug hinzufügen</h2>
-    <form id="patch_form" action="{{ url('match_patch', {'id': data.id}) }}">
+    <form id="patch_form1" action="{{ url('match_patch', {'id': data.id}) }}">
         Zug in SAN: <input name="move"><button>Zug hinzufügen</button>
+    </form>
+    <h2>KI einen Zug hinzufügen lassen</h2>
+    <form id="patch_form2" action="{{ url('match_patch', {'id': data.id}) }}">
+        Bedenkzeit in Millisekunden: <input name="thinktime" value="1000"><button>Zug hinzufügen</button>
     </form>
 
     <h2>Match löschen</h2>
@@ -68,7 +72,7 @@
         }, false);
     </script>
     <script type="text/javascript">
-        document.querySelector('#patch_form').addEventListener('submit', function(e){
+        document.querySelector('#patch_form1').addEventListener('submit', function(e){
             e.preventDefault();
             var req = new XMLHttpRequest();
             req.addEventListener('load', function(ajaxEvent){
@@ -86,11 +90,34 @@
                     );
                 }
             });
-            console.log(e.target.querySelector('input[name=move]'));
             req.open('PATCH', e.target.action);
             req.setRequestHeader("Content-type","text/san");
             req.setRequestHeader("Accept","application/json");
             req.send(e.target.querySelector('input[name=move]').value);
+        }, false);
+
+        document.querySelector('#patch_form2').addEventListener('submit', function(e){
+            e.preventDefault();
+            var req = new XMLHttpRequest();
+            req.addEventListener('load', function(ajaxEvent){
+                if(ajaxEvent.target.status === 200) {
+                    window.location = '{{ url('match_detail', {'id': data.id}) }}';
+                }else{
+                    var answer = {message: 'Error '+ajaxEvent.target.status};
+                    if (ajaxEvent.target.status === 409) {
+                        answer = JSON.parse(ajaxEvent.target.response);
+                    }
+
+                    e.target.insertAdjacentHTML(
+                            'beforeend',
+                            '<br/><span>Konnte keinen Zug hinzufügen: '+answer.message+'</span>'
+                    );
+                }
+            });
+            req.open('PATCH', e.target.action);
+            req.setRequestHeader("Content-type","text/san");
+            req.setRequestHeader("Accept","application/json");
+            req.send('KI ' + e.target.querySelector('input[name=thinktime]').value);
         }, false);
     </script>
 {% endblock %}

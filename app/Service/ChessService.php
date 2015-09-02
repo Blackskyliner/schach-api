@@ -105,7 +105,7 @@ class ChessService
                     ChessEngineInterface::COST_MILLISECONDS,
                     $time
                 );
-            } catch(\Exception $e) {
+            } catch (\Exception $e) {
             }
         }
 

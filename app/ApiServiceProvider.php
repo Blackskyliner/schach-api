@@ -84,10 +84,10 @@ class ApiServiceProvider implements ServiceProviderInterface
         });
 
         $app['service.chesski'] = $app->share(function () use ($app) {
-            if ($app['chenard']) {
+            if (isset($app['chenard'], $app['chenard']['enabled']) && $app['chenard']['enabled']) {
                 return new ChenardEngine(
-                    $app['chenard']['server'],
-                    $app['chenard']['port']
+                    isset($app['chenard']['server']) ? $app['chenard']['server'] : 'localhost',
+                    isset($app['chenard']['port']) ? $app['chenard']['port'] : 12345
                 );
             }
 

@@ -6,6 +6,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Silex\ControllerResolver as BaseResolver;
 
 /**
+ * Wir überschreiben hier den ControllerResolver um eigene Typehint-Injection Magie zu ermöglichen.
+ * Entsprechend wurde hier die originale Funktion doGetArguments kopiert und um Request, Response und Kernel erweitert.
+ *
  * @inheritdoc
  */
 class ControllerResolver extends BaseResolver

@@ -22,9 +22,7 @@ $autoloader = require_once VENDOR_ROOT.'/autoload.php';
 $application = new Application(
     require_once 'configuration.php'
 );
-$application['debug'] = true;
 
 $application->register(new ApiServiceProvider());
 
 return $application;
-

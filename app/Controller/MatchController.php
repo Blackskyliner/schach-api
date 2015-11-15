@@ -18,7 +18,6 @@ use Nocarrier\HalLink;
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -203,7 +202,11 @@ class MatchController implements UrlGeneratorAwareInterface
      *
      * @param Request $request
      * @param Response $response
+     *
      * @return array|Hal
+     *
+     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
      */
     public function createAction(Request $request, Response $response)
     {
@@ -261,6 +264,8 @@ class MatchController implements UrlGeneratorAwareInterface
      * @param Request $request
      * @param $id
      * @return array|Hal
+     *
+     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
      */
     public function detailAction(Request $request, $id)
     {
@@ -279,6 +284,10 @@ class MatchController implements UrlGeneratorAwareInterface
      * @param Request $request
      * @param $id
      * @return array|Hal
+     *
+     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
+     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
      */
     public function updateAction(Request $request, $id)
     {
@@ -323,6 +332,9 @@ class MatchController implements UrlGeneratorAwareInterface
      * @param Request $request
      * @param $id
      * @return array|Hal
+     *
+     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
      */
     public function replaceAction(Request $request, $id)
     {
@@ -365,6 +377,9 @@ class MatchController implements UrlGeneratorAwareInterface
      * @param Request $request
      * @param $id
      * @return array|Hal
+     *
+     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
+     * @throws HttpException wenn das Objekt nicht gelöscht werden konnte
      */
     public function deleteAction(Request $request, $id)
     {
@@ -387,6 +402,10 @@ class MatchController implements UrlGeneratorAwareInterface
      * @param Request $request
      * @param $id
      * @return array|Hal
+     *
+     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
+     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
      */
     public function patchAction(Request $request, $id)
     {

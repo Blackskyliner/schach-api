@@ -16,7 +16,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Dieser Controller implementiert alle Funktionen bezüglich der Routen
+ * Dieser Controller implementiert alle Funktionen bezüglich der Routen.
  *
  *  - /users/
  *  - /users/{id}
@@ -29,11 +29,12 @@ class UserController implements UrlGeneratorAwareInterface
     /** @var  UserManager */
     private $userManager;
 
-    /** Importiere standard Getter/Setter für das RouterAwareInterface */
+    /* Importiere standard Getter/Setter für das RouterAwareInterface */
     use UrlGeneratorAwareTrait;
 
     /**
      * UserController constructor.
+     *
      * @param UserManager $userManager
      */
     public function __construct(UserManager $userManager)
@@ -50,9 +51,11 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Diese Funktion beschreibt GET /users/
+     * Diese Funktion beschreibt GET /users/.
      *
-     * @return array
+     * @param Request $request Das Anfrageobjekt
+     *
+     * @return array|Hal
      */
     public function listAction(Request $request)
     {
@@ -67,7 +70,7 @@ class UserController implements UrlGeneratorAwareInterface
                 $retVal[] = [
                     'ref' => 'user',//:'.$userId,
                     'link' => $link,
-                    'id' => $userId
+                    'id' => $userId,
                 ];
             } catch (\InvalidArgumentException $e) {
             }
@@ -77,11 +80,14 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Diese Funktion beschreibt POST /users/
+     * Diese Funktion beschreibt POST /users/.
      *
-     * @param Request $request
+     * @param Request  $request
      * @param Response $response
+     *
      * @return array|Hal
+     * @throws HttpConflictException wenn ein Validierungsfehler auftritt.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte.
      */
     public function createAction(Request $request, Response $response)
     {
@@ -127,10 +133,12 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Diese Funktion beschreibt GET /users/{id}
+     * Diese Funktion beschreibt GET /users/{id}.
      *
-     * @param integer $id
-     * @return array
+     * @param int $id
+     *
+     * @return array|Hal
+     *
      * @throws NotFoundHttpException wenn der Benutzer nicht gefunden werden konnte.
      */
     public function detailAction(Request $request, $id)
@@ -145,10 +153,15 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Diese Funktion beschreibt PUT /users/{id}
+     * Diese Funktion beschreibt PUT /users/{id}.
      *
      * @param Request $request
-     * @param integer $id
+     * @param int     $id
+     *
+     * @return array|Hal
+     *
+     * @throws HttpConflictException wenn ein Validierungsfehler auftritt.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte.
      */
     public function replaceAction(Request $request, $id)
     {
@@ -188,10 +201,15 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Diese Funktion beschreibt POST /users/{id}
+     * Diese Funktion beschreibt POST /users/{id}.
      *
      * @param Request $request
-     * @param integer $id
+     * @param int     $id
+     *
+     * @return array|Hal
+     *
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte.
+     * @throws NotFoundHttpException wenn der Benutzer nicht gefunden werden konnte.
      */
     public function updateAction(Request $request, $id)
     {
@@ -217,10 +235,14 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Diese Funktion beschreibt DELETE /users/{id}
+     * Diese Funktion beschreibt DELETE /users/{id}.
      *
-     * @param integer $id
-     * @return Response
+     * @param Request $request
+     * @param int $id
+     *
+     * @return array|Hal
+     *
+     * @throws NotFoundHttpException wenn der Benutzer nicht gefunden werden konnte.
      */
     public function deleteAction(Request $request, $id)
     {
@@ -228,6 +250,7 @@ class UserController implements UrlGeneratorAwareInterface
 
         if ($user) {
             $this->getUserManager()->delete($user);
+
             return $this->prepareResponseReturn($user, $request);
         }
 
@@ -237,8 +260,9 @@ class UserController implements UrlGeneratorAwareInterface
     /**
      * Diese Funktion bereitet die Daten der Action Funktionen auf.
      *
-     * @param mixed $data
+     * @param mixed   $data
      * @param Request $request
+     *
      * @return array|Hal
      */
     protected function prepareResponseReturn($data, Request $request)
@@ -303,7 +327,7 @@ class UserController implements UrlGeneratorAwareInterface
      *       Dabei könnte ein SubRequest durch den HTTP Kernel an den Detailendpunkt gesendet werden.
      *
      * @param Request $request
-     * @param Hal $hal
+     * @param Hal     $hal
      */
     protected function handleEmbedding(Request $request, Hal $hal)
     {
@@ -321,13 +345,13 @@ class UserController implements UrlGeneratorAwareInterface
             $userTransformer = new UserTransformer();
             $embedding = []; // Enthält URI => Ressourcendarstellung
             $links = $hal->getLinks(); // alle _links
-            if (array_key_exists('match', $links)) {
+            if (array_key_exists('user', $links)) {
                 /*
                  * Wenn Verlinkungen der Relation match existieren (vgl ::prepareResponseReturn),
                  * dann wollen wir diese Embedden, da $embed['resource'] gesetzt wurde.
                  */
                 foreach ($links['user'] as $halLink) {
-                    /** @var HalLink $halLink */
+                    /* @var HalLink $halLink */
                     // Wir versuchen den User anhand der URI zu laden
                     $user = $this->getUserManager()->loadByResource($halLink->getUri());
                     if ($user) {
@@ -378,7 +402,7 @@ class UserController implements UrlGeneratorAwareInterface
                         'um die jeweilige Spieler in die Antwort direkt mit einzubinden.',
                     'returnValues' => [
                         Response::HTTP_OK => 'Die Antwort enthält eine Liste von URIs aller Spieler.',
-                    ]
+                    ],
                 ],
                 'POST' => [
                     'method' => 'controller.user:createAction',
@@ -402,24 +426,24 @@ class UserController implements UrlGeneratorAwareInterface
                     ],
                     'example' => [
                         'name' => 'Bernd',
-                        'password' => '5e(R37'
+                        'password' => '5e(R37',
                     ],
                     'returnValues' => [
                         Response::HTTP_CREATED => 'Der Spieler wurde erfolgreich erstellt und '.
                             'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
                         Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
                         Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
-                    ]
+                    ],
                 ],
             ],
             '/{id}' => [
-                'GET' =>  [
+                'GET' => [
                     'method' => 'controller.user:detailAction',
                     'description' => 'Gibt die Detailes eine Spielers zurück.',
                     'returnValues' => [
                         Response::HTTP_OK => 'Der Spieler wurde gefunden befindet sich in der Antwort.',
                         Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
-                    ]
+                    ],
                 ],
                 'PUT' => [
                     'method' => 'controller.user:replaceAction',
@@ -443,7 +467,7 @@ class UserController implements UrlGeneratorAwareInterface
                     ],
                     'example' => [
                         'name' => 'Bernd',
-                        'password' => '5e(R37'
+                        'password' => '5e(R37',
                     ],
                     'returnValues' => [
                         Response::HTTP_OK => 'Der Spieler wurde erfolgreich ersetzt und '.
@@ -452,7 +476,7 @@ class UserController implements UrlGeneratorAwareInterface
                             'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
                         Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
                         Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
-                    ]
+                    ],
                 ],
                 'POST' => [
                     'method' => 'controller.user:updateAction',
@@ -476,7 +500,7 @@ class UserController implements UrlGeneratorAwareInterface
                     ],
                     'example' => [
                         'name' => 'Bernd',
-                        'password' => '5e(R37'
+                        'password' => '5e(R37',
                     ],
                     'returnValues' => [
                         Response::HTTP_OK => 'Der Spieler wurde erfolgreich aktualisiert und '.
@@ -484,7 +508,7 @@ class UserController implements UrlGeneratorAwareInterface
                         Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
                         Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
                         Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
-                    ]
+                    ],
                 ],
                 'DELETE' => [
                     'method' => 'controller.user:deleteAction',
@@ -494,9 +518,9 @@ class UserController implements UrlGeneratorAwareInterface
                             'die zuletzt bekannte Ressourcenrepräsentation ist in der Antwort enthalten.',
                         Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
                         Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
-                    ]
+                    ],
                 ],
-            ]
+            ],
         ];
     }
 }

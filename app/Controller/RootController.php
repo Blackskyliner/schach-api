@@ -24,7 +24,7 @@ class RootController
      */
     public function indexAction(Request $request)
     {
-        if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)){
+        if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
             return [];
         } else {
             return new Hal();

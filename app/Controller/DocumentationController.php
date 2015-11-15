@@ -5,7 +5,7 @@ namespace Htwdd\Chessapi\Controller;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Dieser Controller kümmert sich um alle Dokumentationsspezifischen Funktionen.
+ * Dieser Controller kümmert sich um alle dokumentationsspezifischen Funktionen.
  */
 class DocumentationController
 {
@@ -14,6 +14,8 @@ class DocumentationController
      * Dabei werden die im ControllerProvider an den Request angehangenen Dokumentationsparameter
      * zurückgegeben. Da die Rückgabe dadurch ein Array ist, wird die Rückgabe durch die im ControllerProvider
      * implementierte Content-Negotiation behandelt.
+     *
+     * @param Request $request Das Anfrageobjekt
      *
      * @return array
      */

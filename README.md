@@ -1,25 +1,33 @@
-# Anforderungen
+# Schach REST Api
+
+Diese Applikation stellt eine RESTful Schach API zur Verfügung, über welche man 
+Spieler (User) und Partien (Matches) verwalten kann.
+
+Die Applikation stellt einen HTML und einen JSON-View für die verwalteten Daten zur Verfügung.
+Akzeptiert der rufende Client `application/json`, werden entsprechend JSON Daten zurück geliefert.
+Wird kein entsprechender Header gesendet, so liefert die Applikation `text/html`.
+
+Die Applikation kümmert sich (explizit) nicht um Authentifizierung oder Autorisierung.
+Dies müsste ggf. durch einen dazwischen geschalteten Server (Middleware) oder ähnliches geschehen.
+
+Das zurückgegebene JSON-Format orientiert sich an der HATEOAS Definition.
+
+
+## Anforderungen
 - PHP >=5.4
 
-# Installation
-Das öffentliche Verzeichnis der API ist das web/ Verzeichnis. 
-In diesem befindet sich die index.php welche vom Webserver ausgeführt werden muss.
+## Installation
 
-Eine .htaccess liegt bei und nutzt dabei, sofern vorhanden, 
-mod_rewrite damit die index.php nicht zwangsweise in der URL mit angegeben werden muss.
+* Installieren der Abhängigkeiten durch Ausführen des `install-vendors.sh` Skriptes
+* Apache auf das `web/` Verzeichnis zeigen lassen oder alternativ das `run.sh` Skript verwenden um die Anwendung
+  mit dem PHP internen Webserver auszuliefern.
+* Das `data/` Verzeichnis sollte vom Benutzer, welcher PHP ausführt, beschreibbar sein.
 
-Der Server sollte dementsprechend auf das web/ Verzeichnis zeigen.
-Zu Testzwecken kann alternativ der in PHP integrierte Server verwendet werden, um das web/ Verzeichnis bereitzustellen.
+## Konfiguration
 
-Das Verzeichnis data/ sollte durch den Webserver beschreibbar sein, 
-da dort die, von der API verwalteten, Daten abgelegt werden.
+Die Konfiguration kann in `app/configuration.php` vorgenommen werden.
+Bisher lässt sich nur die optionale Schach-KI konfigurieren.
 
-# Zusatz
-
-Das Script bietet die Möglichkeit einer KI einen Zug bestimmen lassen zu können.
-Dafür muss ein ChenServer auf einem System vorhanden sein.
-    https://github.com/cosinekitty/chenard/wiki/ChenServer
-Da dieser einen eigenen globalen Zustand hält, eignet dieser sich nur für das Testen.
-Um für eine Partie die KI einen Zug machen zu lassen, kann der PATCH Endpunkt einer Partie verwendet werden.
-
-Die Konfiguration der KI kann in app/configuration.php vorgenommen werden.
+## Schach KI
+* Kann durch `install-chenard.sh` installiert werden, build-tools werden benötigt!
+* Das `run.sh` Skript startet die KI automatisch, mit entsprechender Konfiguration aus `app/configuration.php` 

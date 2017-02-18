@@ -32,3 +32,6 @@ rm -fR chenard
 
 echo "Add the following line to you .bashrc if you want to automatically have chenserver in your environment."
 echo '    export PATH="$PATH:'$(pwd)/bin'"'
+
+# Export it in to the calling environment
+export PATH="$PATH:'$(pwd)/bin'"

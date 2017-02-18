@@ -61,7 +61,7 @@ fi
 
 if [[ ${CHENARD_ENABLED} -eq 1 ]]; then
     if ! which chenserver > /dev/null 2>&1; then
-        echo "You need to have chenserver in your PATH, you may install it via install-chenard.sh script (build tools needed!).";
+        echo "You need to have chenserver in your PATH, you may install it through the 'install-chenard.sh' script (build tools needed!).";
         exit 1
     fi
 
@@ -70,7 +70,7 @@ if [[ ${CHENARD_ENABLED} -eq 1 ]]; then
     runPHP
     cleanupChenardPid
 else
-    echo "Run without Chenard"
+    echo "Run without Chenard-Chess-AI (to enable toggle configuration in 'app/configuration.php')"
 
     runPHP;
 fi

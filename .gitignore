@@ -1,4 +1,6 @@
 /data
+/bin
+/composer.phar
 /.idea
 /vendor
 !/data/.gitkeep

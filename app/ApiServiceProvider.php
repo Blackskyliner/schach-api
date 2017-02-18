@@ -37,19 +37,19 @@ class ApiServiceProvider implements ServiceProviderInterface
      */
     public function register(Application $app)
     {
-        $app['resolver'] = $app->share(function () use ($app) {
+        $app['resolver'] = Application::share(function () use ($app) {
             return new ControllerResolver($app, $app['logger']);
         });
         $app['response'] = new Response();
         $app['config.filemanager_directory'] = DATA_ROOT;
 
-        $app['service.filemanager'] = $app->share(function () use ($app) {
+        $app['service.filemanager'] = Application::share(function () use ($app) {
             return new FileManager($app['config.filemanager_directory']);
         });
-        $app['service.autoincrementmanager'] = $app->share(function () use ($app) {
+        $app['service.autoincrementmanager'] = Application::share(function () use ($app) {
             return new AutoIncrementManager($app['service.filemanager']);
         });
-        $app['manager.user'] = $app->share(function () use ($app) {
+        $app['manager.user'] = Application::share(function () use ($app) {
             $manager = new UserManager(
                 $app['service.filemanager'],
                 $app['service.autoincrementmanager'],
@@ -60,7 +60,7 @@ class ApiServiceProvider implements ServiceProviderInterface
 
             return $manager;
         });
-        $app['manager.match'] = $app->share(function () use ($app) {
+        $app['manager.match'] = Application::share(function () use ($app) {
             $manager = new MatchManager(
                 $app['service.filemanager'],
                 $app['service.autoincrementmanager'],
@@ -71,24 +71,24 @@ class ApiServiceProvider implements ServiceProviderInterface
         });
 
         // Registrieren aller Controller als Service
-        $app['controller.match'] = $app->share(function () use ($app) {
+        $app['controller.match'] = Application::share(function () use ($app) {
             return new MatchController(
                 $app['manager.match'],
                 $app['manager.user'],
                 $app['service.chess']
             );
         });
-        $app['controller.user'] = $app->share(function () use ($app) {
+        $app['controller.user'] = Application::share(function () use ($app) {
             return new UserController($app['manager.user']);
         });
-        $app['controller.root'] = $app->share(function () use ($app) {
+        $app['controller.root'] = Application::share(function () use ($app) {
             return new RootController();
         });
-        $app['controller.documentation'] = $app->share(function () use ($app) {
+        $app['controller.documentation'] = Application::share(function () use ($app) {
             return new DocumentationController();
         });
 
-        $app['service.chesski'] = $app->share(function () use ($app) {
+        $app['service.chesski'] = Application::share(function () use ($app) {
             if (isset($app['chenard'], $app['chenard']['enabled']) && $app['chenard']['enabled']) {
                 return new ChenardEngine(
                     isset($app['chenard']['server']) ? $app['chenard']['server'] : 'localhost',
@@ -99,7 +99,7 @@ class ApiServiceProvider implements ServiceProviderInterface
             return null;
         });
 
-        $app['service.chess'] = $app->share(function () use ($app) {
+        $app['service.chess'] = Application::share(function () use ($app) {
             $chessService = new ChessService();
 
             if ($app['service.chesski']) {

@@ -53,6 +53,12 @@ cleanupChenardPid() {
     fi
 }
 
+# Vendors check
+if [[ ! -e vendor ]]; then
+    echo "You need to run 'install-vendors.sh' first."
+    exit 1
+fi
+
 if [[ ${CHENARD_ENABLED} -eq 1 ]]; then
     if ! which chenserver > /dev/null 2>&1; then
         echo "You need to have chenserver in your PATH, you may install it via install-chenard.sh script (build tools needed!).";

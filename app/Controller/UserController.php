@@ -508,17 +508,20 @@ class UserController implements UrlGeneratorAwareInterface
      * @return array|Hal
      *
      * @throws NotFoundHttpException wenn der Benutzer nicht gefunden werden konnte.
+     * @throws HttpException wenn das Objekt nicht gelöscht werden konnte
      */
     public function deleteAction(Request $request, $id)
     {
+        /** @var User $match */
         $user = $this->getUserManager()->load($id);
+        if (!$user) {
+            throw new NotFoundHttpException('Could not find user ' . $id);
+        }
 
-        if ($user) {
-            $this->getUserManager()->delete($user);
-
+        if ($this->getUserManager()->delete($user)) {
             return $this->prepareResponseReturn($user, $request);
         }
 
-        throw new NotFoundHttpException('Could not find user ' . $id);
+        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }

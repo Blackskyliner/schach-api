@@ -24,6 +24,8 @@ class FileManager
      * Löscht die angegebene Datei in dem vom manager verwalteten Verzeichniss.
      *
      * @param string $filename gibt an, welche Datei gelöscht werden soll.
+     *
+     * @return bool true, wenn die Datei gelöscht wurde.
      */
     public function removeFile($filename)
     {
@@ -33,6 +35,8 @@ class FileManager
         if (file_exists($filePath) && is_writable($filePath)) {
             unlink($filePath);
         }
+
+        return !file_exists($filePath);
     }
 
     /**

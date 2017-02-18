@@ -149,7 +149,7 @@ abstract class AbstractEntityManager implements ManagerInterface
      */
     public function delete($entity)
     {
-        $this->getFileManager()->removeFile($this->getFileNameForObject($entity));
+        return $this->getFileManager()->removeFile($this->getFileNameForObject($entity));
     }
 
     /**

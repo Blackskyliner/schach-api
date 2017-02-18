@@ -50,7 +50,7 @@ class UserManager extends AbstractEntityManager
         }
 
         // Delete the user
-        parent::delete($entity);
+        return parent::delete($entity);
     }
 
     /**

@@ -118,7 +118,12 @@ class FileManager
         try {
             $file = $this->openFile($filename, 'r', true);
             if ($file->isReadable() && ($lockMode === 0 || $file->flock($lockMode))) {
-                $payload = $file->fread($file->getSize());
+                $payload = '';
+
+                while (!$file->eof()) {
+                    $payload .= $file->fgets();
+                }
+
                 $file->flock(LOCK_UN);
 
                 return $payload;

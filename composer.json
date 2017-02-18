@@ -1,11 +1,11 @@
 {
-  "name": "htwdd/chessapi",
+  "name": "blackscripts/chessapi",
   "description": "Implementierung einer RESTful Schach-API",
   "minimum-stability": "stable",
   "license": "MIT",
   "authors": [
     {
-      "name": "Christoph Kretzschmar",
+      "name": "Christoph Landsdorf",
       "email": "blackskyliner@googlemail.com"
     }
   ],

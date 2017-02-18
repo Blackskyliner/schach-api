@@ -3,8 +3,6 @@
 namespace Htwdd\Chessapi\DataTransformer;
 
 use Htwdd\Chessapi\Entity\Match;
-use Htwdd\Chessapi\UrlGeneratorAwareInterface;
-use Htwdd\Chessapi\UrlGeneratorAwareTrait;
 
 /**
  * Dieser Datentransformer beschreibt die öffentlicher Ressourcendarstellung

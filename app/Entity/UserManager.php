@@ -2,8 +2,6 @@
 
 namespace Htwdd\Chessapi\Entity;
 
-use Htwdd\Chessapi\Service\ManagerInterface;
-
 /**
  * Diese Klasse kümmert sich um die Verwaltung der User Objekte im Dateisystem.
  */
@@ -21,7 +19,10 @@ class UserManager extends AbstractEntityManager
     }
 
     /**
-     * @inheritDoc
+     * Löscht die übergebene Entität.
+     *
+     * @param object $entity Entität, die gelöscht werden soll
+     * @return bool
      */
     public function delete($entity)
     {
@@ -53,7 +54,8 @@ class UserManager extends AbstractEntityManager
     }
 
     /**
-     * @inheritDoc
+     * Gibt den Entity Pfad relativ zum verwendeten FileManager zurück.
+     * @return string
      */
     protected function getEntityPath()
     {

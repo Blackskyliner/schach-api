@@ -5,7 +5,8 @@ namespace Htwdd\Chessapi\Service;
 /**
  * Interface für einen manager, der die im System vorhandenen Entitäten verwalten kann.
  */
-interface ManagerInterface{
+interface ManagerInterface
+{
     /**
      * Speichert die übergebene Entität.
      *

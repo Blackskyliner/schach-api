@@ -15,7 +15,6 @@ use Htwdd\Chessapi\UrlGeneratorAwareInterface;
 use Htwdd\Chessapi\UrlGeneratorAwareTrait;
 use Nocarrier\Hal;
 use Nocarrier\HalLink;
-use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -72,98 +71,234 @@ class MatchController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * @return MatchManager
-     */
-    protected function getMatchManager()
-    {
-        return $this->matchManager;
-    }
-
-    /**
-     * @return UserManager
-     */
-    protected function getUserManager()
-    {
-        return $this->userManager;
-    }
-
-    /**
-     * Diese Methode prüft, ob die übergebene URI einem Benutzer im System entspricht.
+     * Diese Funktion beschreibt alle Route, die von diesem Controller bedient werden.
      *
-     * @param string $uri zu einem Benutzer
-     * @throws HttpConflictException wenn der Benutzer nicht existiert.
-     * @return bool
-     */
-    private function checkUser($uri)
-    {
-        $resource = $this->userManager->loadByResource($uri);
-        if ($resource === null || !$resource instanceof User) {
-            throw new HttpConflictException(
-                '20010',
-                sprintf('The specified user "%s" could not be fetched.', $uri),
-                null,
-                'Make sure the given user was correctly specified and exists.'.PHP_EOL.
-                'A user should be specified as an relative URI within the api. e.g. /users/1'.PHP_EOL
-            );
-        }
-
-        return true;
-    }
-
-    /**
-     * Diese Methode prüft, ob das übergebene Match eine gültige Schachhistorie besitzt.
+     * Zugleich werde die Restriktionen und Dokumentation der einzelnen Endpunkte definiert.
      *
-     * @param Match $match
-     * @throws HttpConflictException wenn ein ungültiger Zug entdeckt wurde.
-     * @return bool
-     */
-    private function checkMatch(Match $match)
-    {
-        try {
-            $this->chessService->validate($match->getStart(), $match->getHistory());
-        } catch (InvalidChessStateException $e) {
-            throw new HttpConflictException(
-                '20020',
-                $e->getMessage(),
-                'history',
-                'Make sure the given history only got valid moves in the standard algebraic notation.'.PHP_EOL.
-                'If you think the history is correct, there may be an error in the Chess Engine...'
-            );
-        }
-
-        return true;
-    }
-
-    /**
-     * Diese Funktion macht aus einer History, welche über einen Request in die Funktionen gegeben werden,
-     * ein Array, welches direkt in ein Match gegeben werden kann.
+     * Keys und deren Bedeutung:
+     *      - method: Dieser Key beschreibt einen im System registrierten Service und dessen Funktion,
+     *               die beim Aufrufen der Route sich um die abarbeitung des Requests kümmert.
+     *      - description: Beschreibt, was die Funktion macht.
+     *      - returnValues: Welche Statuscodes werden von dieser Funktion zurückgegeben und welche,
+     *                      Bedeutung haben diese im Kontext der gerufenen Funktion
+     *      - content-types: Wird dieser Key angegeben, so wird die Kommunikation mit diesen Endpunkten,
+     *                       auf diese Formate beschränkt. Meist wird dies bei schreibenden Methoden benötigt.
+     *      - parameters: Definiert die Daten, die dieser Endpunkt erwartet.
+     *      - example: Ein Beispiel für die definierten Parameter.
+     *      - before: Eine Closure, welche ausgeführt werden soll bevor die definirte Methode gerufen wird.
+     *      - after: Eine Closure, welche ausgeführt werden soll nachdem die definirte Methode gerufen wurde.
+     *      - convert: Eine Closure, welche die übergebenen Parameter verarbeitet/konvertiert.
      *
-     * @param string|array $history
-     * @returns array
+     * @return array
      */
-    private function unpackHistory($history)
+    public static function getRoutes()
     {
-        /*
-         * Die Historie wird als array gespeichert.
-         * Bei der Übertragung wird davon ausgegangen, dass einzelne Züge der Historie
-         * durch eine NEWLINE (\n) getrennt sind.
-         * Dieses Verhalten entspricht dabei einer HTML Textbox.
-         *
-         * Entsprechend muss diese übergabe von Leerzeichen und \r befreit werden,
-         * da diese in der SchachEngine sonst zu Problemen führen könnten.
-         */
-        if (is_array($history)) {
-            return $history;
-        } else {
-            return explode(
-                "\n",
-                str_replace(
-                    array("\r", ' '),
-                    array('', ''),
-                    $history
-                )
-            );
-        }
+        $dummy = new Match();
+        return [
+            '/' => [
+                'GET' => [
+                    'method' => 'controller.match:listAction',
+                    'description' => 'Gibt eine Liste von URIs aller Partien zurück. Dabei können die ' .
+                        'GET Parameter embed, embed-white und embed-black verwendet werden, ' .
+                        'um die Partien und deren jeweilige Spieler in die Antwort direkt mit einzubinden.',
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Die Antwort enthält eine Liste von URIs aller Partien.',
+                    ]
+                ],
+                'POST' => [
+                    'method' => 'controller.match:createAction',
+                    'description' => 'Erstellt eine Partie',
+                    'content-types' => [
+                        'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
+                    ],
+                    'parameters' => [
+                        'white' => [
+                            'required' => false,
+                            'type' => 'application/user',
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die weißen Figuren repräsentieren soll.'
+                        ],
+                        'black' => [
+                            'required' => false,
+                            'type' => 'application/user',
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die schwarten Figuren repräsentieren soll.'
+                        ],
+                        'start' => [
+                            'required' => false,
+                            'type' => 'text/fen',
+                            'description' => 'Die Startsituation der Schachpartie in FEN',
+                            'default' => $dummy->getStart(),
+                        ],
+                        'history' => [
+                            'required' => false,
+                            'type' => 'array of text/san',
+                            'description' => 'Züge, welche in chronologischer Reihenfolge auf die Startsituation angewendet werden sollen',
+                            'default' => $dummy->getHistory(),
+                        ]
+                    ],
+                    'example' => [
+                        'white' => '/users/1',
+                        'black' => '/users/2',
+                        'start' => $dummy->getStart(),
+                        'history' => [
+                            'e4',
+                            'd6',
+                            'd4',
+                            'g6'
+                        ]
+                    ],
+                    'returnValues' => [
+                        Response::HTTP_CREATED => 'Die Partie wurde erfolgreich erstellt und ' .
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
+                    ]
+                ],
+            ],
+            '/{id}' => [
+                'GET' => [
+                    'method' => 'controller.match:detailAction',
+                    'description' => 'Gibt die Details einer Partie zurück. ' .
+                        'Dabei können die GET Parameter ?embed-white und ?embed-black verwendet werden, ' .
+                        'um die Ressource des jeweiligen Spielers in der Antwort mit einzubinden.',
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Die Partie wurde gefunden befindet sich in der Antwort.',
+                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
+                    ]
+                ],
+                'PUT' => [
+                    'method' => 'controller.match:replaceAction',
+                    'content-types' => [
+                        'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
+                    ],
+                    'description' => 'Überschreibt oder erstellt eine Partie mit den angegebenen Parametern.',
+                    'parameters' => [
+                        'white' => [
+                            'required' => false,
+                            'type' => 'application/user',
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die weißen Figuren repräsentieren soll.'
+                        ],
+                        'black' => [
+                            'required' => false,
+                            'type' => 'application/user',
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die schwarten Figuren repräsentieren soll.'
+                        ],
+                        'start' => [
+                            'required' => false,
+                            'type' => 'text/fen',
+                            'description' => 'Die Startsituation der Schachpartie in FEN',
+                            'default' => $dummy->getStart(),
+                        ],
+                        'history' => [
+                            'required' => false,
+                            'type' => 'array of text/san',
+                            'description' => 'Züge, welche in chronologischer Reihenfolge auf die Startsituation angewendet werden sollen',
+                            'default' => $dummy->getHistory(),
+                        ]
+                    ],
+                    'example' => [
+                        'white' => '/users/1',
+                        'black' => '/users/2',
+                        'start' => $dummy->getStart(),
+                        'history' => [
+                            'e4',
+                            'd6',
+                            'd4',
+                            'g6'
+                        ]
+                    ],
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Die Partie wurde erfolgreich ersetzt und ' .
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CREATED => 'Die Partie wurde erfolgreich erstellt und ' .
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
+                    ]
+                ],
+                'POST' => [
+                    'method' => 'controller.match:updateAction',
+                    'content-types' => [
+                        'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
+                    ],
+                    'description' => 'Aktualisiert die Partie anhand der übergebenen Parameter.',
+                    'parameters' => [
+                        'white' => [
+                            'required' => false,
+                            'type' => 'application/user',
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die weißen Figuren repräsentieren soll.'
+                        ],
+                        'black' => [
+                            'required' => false,
+                            'type' => 'application/user',
+                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die schwarten Figuren repräsentieren soll.'
+                        ],
+                        'start' => [
+                            'required' => false,
+                            'type' => 'text/fen',
+                            'description' => 'Die Startsituation der Schachpartie in FEN',
+                            'default' => $dummy->getStart(),
+                        ],
+                        'history' => [
+                            'required' => false,
+                            'type' => 'array of text/san',
+                            'description' => 'Züge, welche in chronologischer Reihenfolge auf die Startsituation angewendet werden sollen',
+                            'default' => $dummy->getHistory(),
+                        ]
+                    ],
+                    'example' => [
+                        'white' => '/users/1',
+                        'black' => '/users/2',
+                        'start' => $dummy->getStart(),
+                        'history' => [
+                            'e4',
+                            'd6',
+                            'd4',
+                            'g6'
+                        ]
+                    ],
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Die Partie wurde erfolgreich aktualisiert und ' .
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
+                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
+                    ]
+                ],
+                'PATCH' => [
+                    'method' => 'controller.match:patchAction',
+                    'content-types' => [
+                        'text/san',
+                    ],
+                    'description' => 'Fügt einen Zug in der SAN zu den Zügen der Partie hinzu. ' .
+                        'Sollte eine KI konfiguriert sein, ' .
+                        'so kann man diese einen Zug spielen lassen, indem man "KI 1000" als Notation eingibt. ' .
+                        'Die 1000 steht dabei für 1000ms Bedenkzeit.',
+                    'example' => 'e4',
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Die Partie wurde erfolgreich aktualisiert und ' .
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
+                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
+                    ]
+                ],
+                'DELETE' => [
+                    'method' => 'controller.match:deleteAction',
+                    'description' => 'Löscht eine Partie.',
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Die Partie wurde erfolgreich gelöscht und ' .
+                            'die zuletzt bekannte Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
+                    ]
+                ],
+            ]
+        ];
     }
 
     /**
@@ -198,256 +333,11 @@ class MatchController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Diese Funktion beschreibt POST /matches/
-     *
-     * @param Request $request
-     * @param Response $response
-     *
-     * @return array|Hal
-     *
-     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
-     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
+     * @return MatchManager
      */
-    public function createAction(Request $request, Response $response)
+    protected function getMatchManager()
     {
-        // Alle Parameter aus dem Request auslesen
-        $white = $request->request->get('white', null);
-        $black = $request->request->get('black', null);
-        $start = $request->request->get('start', null);
-        $history = $request->request->get('history', []);
-
-        // Erstellen einer neuen Partie und setzen der übergebenen Parameter
-        $match = new Match();
-
-        // Sofern die Spieler angegeben wurden, müssen diese auf Gültigkeit überprüft werden
-        if ($white && $this->checkUser($white)) {
-            $match->setWhite($white);
-        }
-        if ($black && $this->checkUser($black)) {
-            $match->setBlack($black);
-        }
-
-        if ($start) {
-            $match->setStart($start);
-        }
-
-        if ($history) {
-            $match->setHistory($this->unpackHistory($history));
-        }
-
-        // Wir prüfen auf die Gültigkeit der Schachzüge und speichern das Match, wenn diese gültig sind.
-        if ($this->checkMatch($match) && $this->getMatchManager()->save($match)) {
-            /*
-             * Sollte das Speichern erfolgreich sein, so wird der Status der Antwort auf 201 CREATED gesetzt.
-             * Zudem wird die Route zum Detailendpunkt generiert und als Location Header der Antwort hinzugefügt.
-             */
-            $response->setStatusCode(Response::HTTP_CREATED);
-            $response->headers->set(
-                'Location',
-                $this->getUrlGenerator()->generate(
-                    'match_detail',
-                    ['id' => $match->getId()]
-                )
-            );
-
-            return $this->prepareResponseReturn($match, $request);
-        }
-
-        // Hier landet man nur, wenn das Speichern nicht erfolgreich war.
-        // Es wird ein interner Serverfehler (500) geworfen.
-        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
-
-    /**
-     * Diese Funktion beschreibt GET /matches/{id}
-     *
-     * @param Request $request
-     * @param $id
-     * @return array|Hal
-     *
-     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
-     */
-    public function detailAction(Request $request, $id)
-    {
-        $match = $this->getMatchManager()->load($id);
-
-        if ($match) {
-            return $this->prepareResponseReturn($match, $request);
-        }
-
-        throw new NotFoundHttpException('Could not find match '.$id);
-    }
-
-    /**
-     * Diese Funktion beschreibt POST /matches/{id}
-     *
-     * @param Request $request
-     * @param $id
-     * @return array|Hal
-     *
-     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
-     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
-     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
-     */
-    public function updateAction(Request $request, $id)
-    {
-        /** @var Match $match */
-        $match = $this->matchManager->load($id);
-        $white = $request->request->get('white', null);
-        $black = $request->request->get('black', null);
-        $start = $request->request->get('start', null);
-        $history = $request->request->get('history', []);
-
-        if (!$match) {
-            throw new NotFoundHttpException('Could not find match '.$id);
-        }
-
-        if ($white && $this->checkUser($white)) {
-            $match->setWhite($white);
-        }
-        if ($black && $this->checkUser($black)) {
-            $match->setBlack($black);
-        }
-        if ($start) {
-            $match->setStart($start);
-        }
-        if ($history) {
-            $match->setHistory($this->unpackHistory($history));
-        } else {
-            if ($start) {
-                $match->setHistory(array());
-            }
-        }
-
-        if ($this->checkMatch($match) && $this->matchManager->save($match)) {
-            return $this->prepareResponseReturn($match, $request);
-        }
-
-        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
-
-    /**
-     * Diese Funktion beschreibt PUT /matches/{id}
-     *
-     * @param Request $request
-     * @param $id
-     * @return array|Hal
-     *
-     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
-     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
-     */
-    public function replaceAction(Request $request, $id)
-    {
-        /** @var Match $match */
-        $match = $this->matchManager->load($id);
-        $white = $request->request->get('white', null);
-        $black = $request->request->get('black', null);
-        $start = $request->request->get('start', null);
-        $history = $request->request->get('history', []);
-
-        if (!$match) {
-            // Sollte kein Match gefunden werden, so wird eines mit der in der URI angegebene ID angelegt
-            $match = new Match();
-            $this->matchManager->setIdentifier($match, $id);
-        }
-
-        if ($white && $this->checkUser($white)) {
-            $match->setWhite($white);
-        }
-        if ($black && $this->checkUser($black)) {
-            $match->setBlack($black);
-        }
-        if ($start) {
-            $match->setStart($start);
-        }
-        if ($history) {
-            $match->setHistory($this->unpackHistory($history));
-        }
-
-        if ($this->checkMatch($match) && $this->matchManager->save($match)) {
-            return $this->prepareResponseReturn($match, $request);
-        }
-
-        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
-
-    /**
-     * Diese Funktion beschreibt DELETE /matches/{id}
-     *
-     * @param Request $request
-     * @param $id
-     * @return array|Hal
-     *
-     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
-     * @throws HttpException wenn das Objekt nicht gelöscht werden konnte
-     */
-    public function deleteAction(Request $request, $id)
-    {
-        /** @var Match $match */
-        $match = $this->getMatchManager()->load($id);
-        if (!$match) {
-            throw new NotFoundHttpException('Could not find match '.$id);
-        }
-
-        if ($this->getMatchManager()->delete($match)) {
-            return $this->prepareResponseReturn($match, $request);
-        }
-
-        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
-
-    /**
-     * Diese Funktion beschreibt PATCH /matches/{id}
-     *
-     * @param Request $request
-     * @param $id
-     * @return array|Hal
-     *
-     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
-     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
-     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
-     */
-    public function patchAction(Request $request, $id)
-    {
-        /** @var Match $match */
-        $match = $this->getMatchManager()->load($id);
-        if (!$match) {
-            throw new NotFoundHttpException('Could not find match '.$id);
-        }
-
-        $patch = $request->request->get('PATCH');
-        if (strpos($patch, 'KI') !== false) {
-            sscanf($patch, 'KI %d', $millisec);
-            if ($millisec) {
-                $move = $this->chessService->think(
-                    $match->getStart(),
-                    $match->getHistory(),
-                    $millisec
-                );
-                if ($move) {
-                    if ($move === 'GAME_OVER') {
-                        throw new HttpConflictException(
-                            '30002',
-                            'The game has already ended.'
-                        );
-                    }
-
-                    $patch = $move;
-                } else {
-                    throw new HttpConflictException(
-                        '30001',
-                        'The KI could not think of an valid move.'
-                    );
-                }
-            }
-        }
-        $match->addHistory($patch);
-
-        if ($this->checkMatch($match) && $this->getMatchManager()->save($match)) {
-            return $this->prepareResponseReturn($match, $request);
-        }
-
-        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
+        return $this->matchManager;
     }
 
     /**
@@ -568,8 +458,8 @@ class MatchController implements UrlGeneratorAwareInterface
 
                         // danach prüfen wir ob white und black im Match gesetzt sind.
                         if ($embed['white']
-                         && $match->getWhite()
-                         && !array_key_exists($match->getWhite(), $embedding)
+                            && $match->getWhite()
+                            && !array_key_exists($match->getWhite(), $embedding)
                         ) {
                             // Sofern white definiert ist, laden wir anhand der URI den User
                             // und fügen dessen Detailansicht analog in $embedding hinzu.
@@ -577,8 +467,8 @@ class MatchController implements UrlGeneratorAwareInterface
                             $embedding[$match->getWhite()] = $userTransformer->toArray($user);
                         }
                         if ($embed['black']
-                         && $match->getBlack()
-                         && !array_key_exists($match->getBlack(), $embedding)
+                            && $match->getBlack()
+                            && !array_key_exists($match->getBlack(), $embedding)
                         ) {
                             // analog white
                             $user = $this->getUserManager()->loadByResource($match->getBlack());
@@ -621,233 +511,342 @@ class MatchController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Diese Funktion beschreibt alle Route, die von diesem Controller bedient werden.
-     *
-     * Zugleich werde die Restriktionen und Dokumentation der einzelnen Endpunkte definiert.
-     *
-     * Keys und deren Bedeutung:
-     *      - method: Dieser Key beschreibt einen im System registrierten Service und dessen Funktion,
-     *               die beim Aufrufen der Route sich um die abarbeitung des Requests kümmert.
-     *      - description: Beschreibt, was die Funktion macht.
-     *      - returnValues: Welche Statuscodes werden von dieser Funktion zurückgegeben und welche,
-     *                      Bedeutung haben diese im Kontext der gerufenen Funktion
-     *      - content-types: Wird dieser Key angegeben, so wird die Kommunikation mit diesen Endpunkten,
-     *                       auf diese Formate beschränkt. Meist wird dies bei schreibenden Methoden benötigt.
-     *      - parameters: Definiert die Daten, die dieser Endpunkt erwartet.
-     *      - example: Ein Beispiel für die definierten Parameter.
-     *      - before: Eine Closure, welche ausgeführt werden soll bevor die definirte Methode gerufen wird.
-     *      - after: Eine Closure, welche ausgeführt werden soll nachdem die definirte Methode gerufen wurde.
-     *      - convert: Eine Closure, welche die übergebenen Parameter verarbeitet/konvertiert.
-     *
-     * @return array
+     * @return UserManager
      */
-    public static function getRoutes()
+    protected function getUserManager()
     {
-        $dummy = new Match();
-        return [
-            '/' => [
-                'GET' => [
-                    'method' => 'controller.match:listAction',
-                    'description' => 'Gibt eine Liste von URIs aller Partien zurück. Dabei können die '.
-                                     'GET Parameter embed, embed-white und embed-black verwendet werden, '.
-                                     'um die Partien und deren jeweilige Spieler in die Antwort direkt mit einzubinden.',
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Die Antwort enthält eine Liste von URIs aller Partien.',
-                    ]
-                ],
-                'POST' => [
-                    'method' => 'controller.match:createAction',
-                    'description' => 'Erstellt eine Partie',
-                    'content-types' => [
-                        'application/x-www-form-urlencoded',
-                        'application/json',
-                        'text/xml',
-                    ],
-                    'parameters' => [
-                        'white' => [
-                            'required' => false,
-                            'type' => 'application/user',
-                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die weißen Figuren repräsentieren soll.'
-                        ],
-                        'black' => [
-                            'required' => false,
-                            'type' => 'application/user',
-                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die schwarten Figuren repräsentieren soll.'
-                        ],
-                        'start' => [
-                            'required' => false,
-                            'type' => 'text/fen',
-                            'description' => 'Die Startsituation der Schachpartie in FEN',
-                            'default' => $dummy->getStart(),
-                        ],
-                        'history' => [
-                            'required' => false,
-                            'type' => 'array of text/san',
-                            'description' => 'Züge, welche in chronologischer Reihenfolge auf die Startsituation angewendet werden sollen',
-                            'default' => $dummy->getHistory(),
-                        ]
-                    ],
-                    'example' => [
-                        'white' => '/users/1',
-                        'black' => '/users/2',
-                        'start' => $dummy->getStart(),
-                        'history' => [
-                            'e4',
-                            'd6',
-                            'd4',
-                            'g6'
-                        ]
-                    ],
-                    'returnValues' => [
-                        Response::HTTP_CREATED => 'Die Partie wurde erfolgreich erstellt und '.
-                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
-                    ]
-                ],
-            ],
-            '/{id}' => [
-                'GET' =>  [
-                    'method' => 'controller.match:detailAction',
-                    'description' => 'Gibt die Details einer Partie zurück. '.
-                                     'Dabei können die GET Parameter ?embed-white und ?embed-black verwendet werden, '.
-                                     'um die Ressource des jeweiligen Spielers in der Antwort mit einzubinden.',
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Die Partie wurde gefunden befindet sich in der Antwort.',
-                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
-                    ]
-                ],
-                'PUT' => [
-                    'method' => 'controller.match:replaceAction',
-                    'content-types' => [
-                        'application/x-www-form-urlencoded',
-                        'application/json',
-                        'text/xml',
-                    ],
-                    'description' => 'Überschreibt oder erstellt eine Partie mit den angegebenen Parametern.',
-                    'parameters' => [
-                        'white' => [
-                            'required' => false,
-                            'type' => 'application/user',
-                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die weißen Figuren repräsentieren soll.'
-                        ],
-                        'black' => [
-                            'required' => false,
-                            'type' => 'application/user',
-                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die schwarten Figuren repräsentieren soll.'
-                        ],
-                        'start' => [
-                            'required' => false,
-                            'type' => 'text/fen',
-                            'description' => 'Die Startsituation der Schachpartie in FEN',
-                            'default' => $dummy->getStart(),
-                        ],
-                        'history' => [
-                            'required' => false,
-                            'type' => 'array of text/san',
-                            'description' => 'Züge, welche in chronologischer Reihenfolge auf die Startsituation angewendet werden sollen',
-                            'default' => $dummy->getHistory(),
-                        ]
-                    ],
-                    'example' => [
-                        'white' => '/users/1',
-                        'black' => '/users/2',
-                        'start' => $dummy->getStart(),
-                        'history' => [
-                            'e4',
-                            'd6',
-                            'd4',
-                            'g6'
-                        ]
-                    ],
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Die Partie wurde erfolgreich ersetzt und '.
-                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_CREATED => 'Die Partie wurde erfolgreich erstellt und '.
-                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
-                    ]
-                ],
-                'POST' => [
-                    'method' => 'controller.match:updateAction',
-                    'content-types' => [
-                        'application/x-www-form-urlencoded',
-                        'application/json',
-                        'text/xml',
-                    ],
-                    'description' => 'Aktualisiert die Partie anhand der übergebenen Parameter.',
-                    'parameters' => [
-                        'white' => [
-                            'required' => false,
-                            'type' => 'application/user',
-                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die weißen Figuren repräsentieren soll.'
-                        ],
-                        'black' => [
-                            'required' => false,
-                            'type' => 'application/user',
-                            'description' => 'URI zu einem Benuntzer/Spieler, welcher die schwarten Figuren repräsentieren soll.'
-                        ],
-                        'start' => [
-                            'required' => false,
-                            'type' => 'text/fen',
-                            'description' => 'Die Startsituation der Schachpartie in FEN',
-                            'default' => $dummy->getStart(),
-                        ],
-                        'history' => [
-                            'required' => false,
-                            'type' => 'array of text/san',
-                            'description' => 'Züge, welche in chronologischer Reihenfolge auf die Startsituation angewendet werden sollen',
-                            'default' => $dummy->getHistory(),
-                        ]
-                    ],
-                    'example' => [
-                        'white' => '/users/1',
-                        'black' => '/users/2',
-                        'start' => $dummy->getStart(),
-                        'history' => [
-                            'e4',
-                            'd6',
-                            'd4',
-                            'g6'
-                        ]
-                    ],
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Die Partie wurde erfolgreich aktualisiert und '.
-                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
-                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
-                    ]
-                ],
-                'PATCH' => [
-                    'method' => 'controller.match:patchAction',
-                    'content-types' => [
-                        'text/san',
-                    ],
-                    'description' => 'Fügt einen Zug in der SAN zu den Zügen der Partie hinzu. '.
-                        'Sollte eine KI konfiguriert sein, '.
-                        'so kann man diese einen Zug spielen lassen, indem man "KI 1000" als Notation eingibt. '.
-                        'Die 1000 steht dabei für 1000ms Bedenkzeit.',
-                    'example' => 'e4',
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Die Partie wurde erfolgreich aktualisiert und '.
-                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
-                        Response::HTTP_CONFLICT => 'Die aus den Parametern resultierende Partie ist ungültig.',
-                    ]
-                ],
-                'DELETE' => [
-                    'method' => 'controller.match:deleteAction',
-                    'description' => 'Löscht eine Partie.',
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Die Partie wurde erfolgreich gelöscht und '.
-                            'die zuletzt bekannte Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_NOT_FOUND => 'Die Partie wurde nicht gefunden.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Die Partie konnte nicht auf dem Server gespeichert werden.',
-                    ]
-                ],
-            ]
-        ];
+        return $this->userManager;
+    }
+
+    /**
+     * Diese Funktion beschreibt POST /matches/
+     *
+     * @param Request $request
+     * @param Response $response
+     *
+     * @return array|Hal
+     *
+     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
+     */
+    public function createAction(Request $request, Response $response)
+    {
+        // Alle Parameter aus dem Request auslesen
+        $white = $request->request->get('white', null);
+        $black = $request->request->get('black', null);
+        $start = $request->request->get('start', null);
+        $history = $request->request->get('history', []);
+
+        // Erstellen einer neuen Partie und setzen der übergebenen Parameter
+        $match = new Match();
+
+        // Sofern die Spieler angegeben wurden, müssen diese auf Gültigkeit überprüft werden
+        if ($white && $this->checkUser($white)) {
+            $match->setWhite($white);
+        }
+        if ($black && $this->checkUser($black)) {
+            $match->setBlack($black);
+        }
+
+        if ($start) {
+            $match->setStart($start);
+        }
+
+        if ($history) {
+            $match->setHistory($this->unpackHistory($history));
+        }
+
+        // Wir prüfen auf die Gültigkeit der Schachzüge und speichern das Match, wenn diese gültig sind.
+        if ($this->checkMatch($match) && $this->getMatchManager()->save($match)) {
+            /*
+             * Sollte das Speichern erfolgreich sein, so wird der Status der Antwort auf 201 CREATED gesetzt.
+             * Zudem wird die Route zum Detailendpunkt generiert und als Location Header der Antwort hinzugefügt.
+             */
+            $response->setStatusCode(Response::HTTP_CREATED);
+            $response->headers->set(
+                'Location',
+                $this->getUrlGenerator()->generate(
+                    'match_detail',
+                    ['id' => $match->getId()]
+                )
+            );
+
+            return $this->prepareResponseReturn($match, $request);
+        }
+
+        // Hier landet man nur, wenn das Speichern nicht erfolgreich war.
+        // Es wird ein interner Serverfehler (500) geworfen.
+        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Diese Methode prüft, ob die übergebene URI einem Benutzer im System entspricht.
+     *
+     * @param string $uri zu einem Benutzer
+     * @throws HttpConflictException wenn der Benutzer nicht existiert.
+     * @return bool
+     */
+    private function checkUser($uri)
+    {
+        $resource = $this->userManager->loadByResource($uri);
+        if ($resource === null || !$resource instanceof User) {
+            throw new HttpConflictException(
+                '20010',
+                sprintf('The specified user "%s" could not be fetched.', $uri),
+                null,
+                'Make sure the given user was correctly specified and exists.' . PHP_EOL .
+                'A user should be specified as an relative URI within the api. e.g. /users/1' . PHP_EOL
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * Diese Funktion macht aus einer History, welche über einen Request in die Funktionen gegeben werden,
+     * ein Array, welches direkt in ein Match gegeben werden kann.
+     *
+     * @param string|array $history
+     * @returns array
+     */
+    private function unpackHistory($history)
+    {
+        /*
+         * Die Historie wird als array gespeichert.
+         * Bei der Übertragung wird davon ausgegangen, dass einzelne Züge der Historie
+         * durch eine NEWLINE (\n) getrennt sind.
+         * Dieses Verhalten entspricht dabei einer HTML Textbox.
+         *
+         * Entsprechend muss diese übergabe von Leerzeichen und \r befreit werden,
+         * da diese in der SchachEngine sonst zu Problemen führen könnten.
+         */
+        if (is_array($history)) {
+            return $history;
+        } else {
+            return explode(
+                "\n",
+                str_replace(
+                    array("\r", ' '),
+                    array('', ''),
+                    $history
+                )
+            );
+        }
+    }
+
+    /**
+     * Diese Methode prüft, ob das übergebene Match eine gültige Schachhistorie besitzt.
+     *
+     * @param Match $match
+     * @throws HttpConflictException wenn ein ungültiger Zug entdeckt wurde.
+     * @return bool
+     */
+    private function checkMatch(Match $match)
+    {
+        try {
+            $this->chessService->validate($match->getStart(), $match->getHistory());
+        } catch (InvalidChessStateException $e) {
+            throw new HttpConflictException(
+                '20020',
+                $e->getMessage(),
+                'history',
+                'Make sure the given history only got valid moves in the standard algebraic notation.' . PHP_EOL .
+                'If you think the history is correct, there may be an error in the Chess Engine...'
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * Diese Funktion beschreibt GET /matches/{id}
+     *
+     * @param Request $request
+     * @param $id
+     * @return array|Hal
+     *
+     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
+     */
+    public function detailAction(Request $request, $id)
+    {
+        $match = $this->getMatchManager()->load($id);
+
+        if ($match) {
+            return $this->prepareResponseReturn($match, $request);
+        }
+
+        throw new NotFoundHttpException('Could not find match ' . $id);
+    }
+
+    /**
+     * Diese Funktion beschreibt POST /matches/{id}
+     *
+     * @param Request $request
+     * @param $id
+     * @return array|Hal
+     *
+     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
+     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
+     */
+    public function updateAction(Request $request, $id)
+    {
+        /** @var Match $match */
+        $match = $this->matchManager->load($id);
+        $white = $request->request->get('white', null);
+        $black = $request->request->get('black', null);
+        $start = $request->request->get('start', null);
+        $history = $request->request->get('history', []);
+
+        if (!$match) {
+            throw new NotFoundHttpException('Could not find match ' . $id);
+        }
+
+        if ($white && $this->checkUser($white)) {
+            $match->setWhite($white);
+        }
+        if ($black && $this->checkUser($black)) {
+            $match->setBlack($black);
+        }
+        if ($start) {
+            $match->setStart($start);
+        }
+        if ($history) {
+            $match->setHistory($this->unpackHistory($history));
+        } else {
+            if ($start) {
+                $match->setHistory(array());
+            }
+        }
+
+        if ($this->checkMatch($match) && $this->matchManager->save($match)) {
+            return $this->prepareResponseReturn($match, $request);
+        }
+
+        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Diese Funktion beschreibt PUT /matches/{id}
+     *
+     * @param Request $request
+     * @param $id
+     * @return array|Hal
+     *
+     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
+     */
+    public function replaceAction(Request $request, $id)
+    {
+        /** @var Match $match */
+        $match = $this->matchManager->load($id);
+        $white = $request->request->get('white', null);
+        $black = $request->request->get('black', null);
+        $start = $request->request->get('start', null);
+        $history = $request->request->get('history', []);
+
+        if (!$match) {
+            // Sollte kein Match gefunden werden, so wird eines mit der in der URI angegebene ID angelegt
+            $match = new Match();
+            $this->matchManager->setIdentifier($match, $id);
+        }
+
+        if ($white && $this->checkUser($white)) {
+            $match->setWhite($white);
+        }
+        if ($black && $this->checkUser($black)) {
+            $match->setBlack($black);
+        }
+        if ($start) {
+            $match->setStart($start);
+        }
+        if ($history) {
+            $match->setHistory($this->unpackHistory($history));
+        }
+
+        if ($this->checkMatch($match) && $this->matchManager->save($match)) {
+            return $this->prepareResponseReturn($match, $request);
+        }
+
+        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Diese Funktion beschreibt DELETE /matches/{id}
+     *
+     * @param Request $request
+     * @param $id
+     * @return array|Hal
+     *
+     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
+     * @throws HttpException wenn das Objekt nicht gelöscht werden konnte
+     */
+    public function deleteAction(Request $request, $id)
+    {
+        /** @var Match $match */
+        $match = $this->getMatchManager()->load($id);
+        if (!$match) {
+            throw new NotFoundHttpException('Could not find match ' . $id);
+        }
+
+        if ($this->getMatchManager()->delete($match)) {
+            return $this->prepareResponseReturn($match, $request);
+        }
+
+        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Diese Funktion beschreibt PATCH /matches/{id}
+     *
+     * @param Request $request
+     * @param $id
+     * @return array|Hal
+     *
+     * @throws NotFoundHttpException wenn die Partie nicht gefunden wurde
+     * @throws HttpConflictException wenn die Partie nicht erfolgreich validiert werden konnte.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte
+     */
+    public function patchAction(Request $request, $id)
+    {
+        /** @var Match $match */
+        $match = $this->getMatchManager()->load($id);
+        if (!$match) {
+            throw new NotFoundHttpException('Could not find match ' . $id);
+        }
+
+        $patch = $request->request->get('PATCH');
+        if (strpos($patch, 'KI') !== false) {
+            sscanf($patch, 'KI %d', $millisec);
+            if ($millisec) {
+                $move = $this->chessService->think(
+                    $match->getStart(),
+                    $match->getHistory(),
+                    $millisec
+                );
+                if ($move) {
+                    if ($move === 'GAME_OVER') {
+                        throw new HttpConflictException(
+                            '30002',
+                            'The game has already ended.'
+                        );
+                    }
+
+                    $patch = $move;
+                } else {
+                    throw new HttpConflictException(
+                        '30001',
+                        'The KI could not think of an valid move.'
+                    );
+                }
+            }
+        }
+        $match->addHistory($patch);
+
+        if ($this->checkMatch($match) && $this->getMatchManager()->save($match)) {
+            return $this->prepareResponseReturn($match, $request);
+        }
+
+        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }

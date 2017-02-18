@@ -8,7 +8,8 @@ namespace Htwdd\Chessapi\Entity;
 class MatchManager extends AbstractEntityManager
 {
     /**
-     * @inheritDoc
+     * Gibt den Entity Pfad relativ zum verwendeten FileManager zurück.
+     * @return string
      */
     protected function getEntityPath()
     {

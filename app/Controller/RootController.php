@@ -17,21 +17,6 @@ use Symfony\Component\HttpFoundation\Response;
 class RootController
 {
     /**
-     * Diese Funktion beschreibt GET /
-     *
-     * @param Request $request
-     * @return array|Hal
-     */
-    public function indexAction(Request $request)
-    {
-        if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
-            return [];
-        } else {
-            return new Hal();
-        }
-    }
-
-    /**
      * Diese Funktion beschreibt alle Route, die von diesem Controller bedient werden.
      *
      * Zugleich werde die Restriktionen und Dokumentation der einzelnen Endpunkte definiert.
@@ -65,5 +50,20 @@ class RootController
                 ],
             ]
         ];
+    }
+
+    /**
+     * Diese Funktion beschreibt GET /
+     *
+     * @param Request $request
+     * @return array|Hal
+     */
+    public function indexAction(Request $request)
+    {
+        if (in_array(current($request->getAcceptableContentTypes()), ['text/html', '*/*'], true)) {
+            return [];
+        } else {
+            return new Hal();
+        }
     }
 }

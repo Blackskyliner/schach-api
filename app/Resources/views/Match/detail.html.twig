@@ -39,11 +39,11 @@
 
     <h2>Einen Zug hinzufügen</h2>
     <form id="patch_form1" action="{{ url('match_patch', {'id': data.id}) }}">
-        Zug in SAN: <input name="move"><button>Zug hinzufügen</button>
+        <label for="move">Zug in SAN:</label> <input id="move" name="move"><button>Zug hinzufügen</button>
     </form>
     <h2>KI einen Zug hinzufügen lassen</h2>
     <form id="patch_form2" action="{{ url('match_patch', {'id': data.id}) }}">
-        Bedenkzeit in Millisekunden: <input name="thinktime" value="1000"><button>Zug hinzufügen</button>
+        <label for="thinktime">Bedenkzeit in Millisekunden:</label> <input id="thinktime" name="thinktime" value="1000"><button>Zug hinzufügen</button>
     </form>
 
     <h2>Match löschen</h2>

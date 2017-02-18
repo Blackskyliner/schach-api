@@ -21,6 +21,21 @@ class FileManager
     }
 
     /**
+     * Löscht die angegebene Datei in dem vom manager verwalteten Verzeichniss.
+     *
+     * @param string $filename gibt an, welche Datei gelöscht werden soll.
+     */
+    public function removeFile($filename)
+    {
+        $fullDirectoryPath = rtrim($this->getDirectory() . DIRECTORY_SEPARATOR . dirname($filename), '/.');
+        $filePath = $fullDirectoryPath . DIRECTORY_SEPARATOR . basename($filename);
+
+        if (file_exists($filePath) && is_writable($filePath)) {
+            unlink($filePath);
+        }
+    }
+
+    /**
      * Gibt das vom Manager verwaltete Verzeichniss zurück.
      *
      * @return string
@@ -28,48 +43,6 @@ class FileManager
     public function getDirectory()
     {
         return $this->directory;
-    }
-
-    /**
-     * Öffnet die angegebene Datei in dem vom Manager verwalteten Verzeichniss.
-     *
-     * @param string $filename gibt an welche Datei geöffnet werden soll.
-     * @param string $mode gibt an wie die Datei geöffnet werden soll.
-     * @param bool $createDirs gibt an ob der Pfad zur Datei erstellt werden soll wenn dieser nicht existiert.
-     *
-     * @see http://php.net/manual/en/function.fopen.php für gültige $mode.
-     *
-     * @return \SplFileObject
-     * @throws \RuntimeException wenn die Datei nicht geöffnet werden konnte.
-     */
-    public function openFile($filename, $mode = 'r', $createDirs = false)
-    {
-        if ($filename === null || $filename === '') {
-            throw new \RuntimeException('Please specify an valid filename.');
-        }
-
-        $fullDirectoryPath = rtrim($this->getDirectory().DIRECTORY_SEPARATOR.dirname($filename), '/.');
-
-        if ($createDirs === true && !file_exists($fullDirectoryPath)) {
-            mkdir($fullDirectoryPath, 0750, true);
-        }
-
-        return new \SplFileObject($fullDirectoryPath.DIRECTORY_SEPARATOR.basename($filename), $mode);
-    }
-
-    /**
-     * Löscht die angegebene Datei in dem vom manager verwalteten Verzeichniss.
-     *
-     * @param string $filename gibt an, welche Datei gelöscht werden soll.
-     */
-    public function removeFile($filename)
-    {
-        $fullDirectoryPath = rtrim($this->getDirectory().DIRECTORY_SEPARATOR.dirname($filename), '/.');
-        $filePath = $fullDirectoryPath.DIRECTORY_SEPARATOR.basename($filename);
-
-        if (file_exists($filePath) && is_writable($filePath)) {
-            unlink($filePath);
-        }
     }
 
     /**
@@ -103,6 +76,35 @@ class FileManager
         }
 
         return false;
+    }
+
+    /**
+     * Öffnet die angegebene Datei in dem vom Manager verwalteten Verzeichniss.
+     *
+     * @param string $filename gibt an welche Datei geöffnet werden soll.
+     * @param string $mode gibt an wie die Datei geöffnet werden soll.
+     * @param bool $createDirs gibt an ob der Pfad zur Datei erstellt werden soll wenn dieser nicht existiert.
+     *
+     * @see http://php.net/manual/en/function.fopen.php für gültige $mode.
+     *
+     * @return \SplFileObject
+     * @throws \RuntimeException wenn die Datei nicht geöffnet werden konnte.
+     */
+    public function openFile($filename, $mode = 'r', $createDirs = false)
+    {
+        if ($filename === null || $filename === '') {
+            throw new \RuntimeException('Please specify an valid filename.');
+        }
+
+        $fullDirectoryPath = rtrim($this->getDirectory() . DIRECTORY_SEPARATOR . dirname($filename), '/.');
+
+        if ($createDirs === true && !file_exists($fullDirectoryPath)) {
+            if(!mkdir($fullDirectoryPath, 0750, true) && !is_dir($fullDirectoryPath)){
+                throw new \RuntimeException('Could not access filepath');
+            }
+        }
+
+        return new \SplFileObject($fullDirectoryPath . DIRECTORY_SEPARATOR . basename($filename), $mode);
     }
 
     /**

@@ -19,6 +19,14 @@ class HttpConflictException extends HttpException
 
     /**
      * HttpConflictException constructor.
+     * @param string $conflictCode
+     * @param null $message
+     * @param null $property
+     * @param null $developerMessage
+     * @param int $status
+     * @param \Exception $previous
+     * @param array $headers
+     * @param int $exceptionCode
      */
     public function __construct(
         $conflictCode,
@@ -39,19 +47,19 @@ class HttpConflictException extends HttpException
         ];
 
         $exceptionMessage = sprintf(
-            'The execution returned with %s and the error code %s.'.PHP_EOL,
+            'The execution returned with %s and the error code %s.' . PHP_EOL,
             $status,
             $conflictCode
         );
         if ($property !== null) {
             $exceptionMessage .= sprintf(
-                'This error is related to the property: "%s"'.PHP_EOL,
+                'This error is related to the property: "%s"' . PHP_EOL,
                 $property
             );
         }
-        $exceptionMessage .= sprintf('%s', $message).PHP_EOL.PHP_EOL;
+        $exceptionMessage .= sprintf('%s', $message) . PHP_EOL . PHP_EOL;
         if ($developerMessage !== null) {
-            $exceptionMessage .=  sprintf('Developer Information: %s', $developerMessage).PHP_EOL;
+            $exceptionMessage .= sprintf('Developer Information: %s', $developerMessage) . PHP_EOL;
         }
 
         parent::__construct($status, $exceptionMessage, $previous, $headers, $exceptionCode);

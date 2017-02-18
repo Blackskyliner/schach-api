@@ -10,7 +10,7 @@ use Htwdd\Chessapi\Exception\InvalidChessStateException;
  */
 class ChessService
 {
-    /** @var ChessGame  */
+    /** @var ChessGame */
     private $chessEngine;
 
     /** @var  ChessEngineInterface */
@@ -42,10 +42,23 @@ class ChessService
     }
 
     /**
+     * Validiert eine übergebene Schachsituation.
+     *
+     * @param string $start Startsituation in der FEN
+     * @param string[] $history Historie der Züge in SAN
+     * @throws InvalidChessStateException wenn die FEN ungültig ist oder einer der Züge.
+     */
+    public function validate($start, array $history)
+    {
+        $this->initEngine($start, $history);
+    }
+
+    /**
      * Initialisiert die verwendete SchachEngine.
      *
      * @param $start
      * @param array $history
+     * @throws InvalidChessStateException wenn die Historie ungültig ist.
      */
     private function initEngine($start, array $history)
     {
@@ -57,18 +70,6 @@ class ChessService
                 throw new InvalidChessStateException($error->getMessage());
             }
         }
-    }
-
-    /**
-     * Validiert eine übergebene Schachsituation.
-     *
-     * @param string $start Startsituation in der FEN
-     * @param string[] $history Historie der Züge in SAN
-     * @throws InvalidChessStateException wenn die FEN ungültig ist oder einer der Züge.
-     */
-    public function validate($start, array $history)
-    {
-        $this->initEngine($start, $history);
     }
 
     /**

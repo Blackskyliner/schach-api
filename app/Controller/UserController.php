@@ -43,11 +43,157 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * @return UserManager
+     * Diese Funktion beschreibt alle Route, die von diesem Controller bedient werden.
+     *
+     * Zugleich werde die Restriktionen und Dokumentation der einzelnen Endpunkte definiert.
+     *
+     * Keys und deren Bedeutung:
+     *      - method: Dieser Key beschreibt einen im System registrierten Service und dessen Funktion,
+     *               die beim Aufrufen der Route sich um die abarbeitung des Requests kümmert.
+     *      - description: Beschreibt, was die Funktion macht.
+     *      - returnValues: Welche Statuscodes werden von dieser Funktion zurückgegeben und welche,
+     *                      Bedeutung haben diese im Kontext der gerufenen Funktion
+     *      - content-types: Wird dieser Key angegeben, so wird die Kommunikation mit diesen Endpunkten,
+     *                       auf diese Formate beschränkt. Meist wird dies bei schreibenden Methoden benötigt.
+     *      - parameters: Definiert die Daten, die dieser Endpunkt erwartet.
+     *      - example: Ein Beispiel für die definierten Parameter.
+     *      - before: Eine Closure, welche ausgeführt werden soll bevor die definirte Methode gerufen wird.
+     *      - after: Eine Closure, welche ausgeführt werden soll nachdem die definirte Methode gerufen wurde.
+     *      - convert: Eine Closure, welche die übergebenen Parameter verarbeitet/konvertiert.
+     *
+     * @return array
      */
-    protected function getUserManager()
+    public static function getRoutes()
     {
-        return $this->userManager;
+        return [
+            '/' => [
+                'GET' => [
+                    'method' => 'controller.user:listAction',
+                    'description' => 'Gibt eine Liste von URIs aller Spieler zurück. Dabei kann der ' .
+                        'GET Parameter embed verwendet werden, ' .
+                        'um die jeweilige Spieler in die Antwort direkt mit einzubinden.',
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Die Antwort enthält eine Liste von URIs aller Spieler.',
+                    ],
+                ],
+                'POST' => [
+                    'method' => 'controller.user:createAction',
+                    'description' => 'Erstellt einen Spieler.',
+                    'content-types' => [
+                        'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
+                    ],
+                    'parameters' => [
+                        'name' => [
+                            'required' => true,
+                            'type' => 'text/plain',
+                            'description' => 'Name des Spielers',
+                        ],
+                        'password' => [
+                            'required' => true,
+                            'type' => 'text/plain',
+                            'description' => 'Passwort des Spielers',
+                        ],
+                    ],
+                    'example' => [
+                        'name' => 'Bernd',
+                        'password' => '5e(R37',
+                    ],
+                    'returnValues' => [
+                        Response::HTTP_CREATED => 'Der Spieler wurde erfolgreich erstellt und ' .
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
+                    ],
+                ],
+            ],
+            '/{id}' => [
+                'GET' => [
+                    'method' => 'controller.user:detailAction',
+                    'description' => 'Gibt die Detailes eine Spielers zurück.',
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Der Spieler wurde gefunden befindet sich in der Antwort.',
+                        Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
+                    ],
+                ],
+                'PUT' => [
+                    'method' => 'controller.user:replaceAction',
+                    'content-types' => [
+                        'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
+                    ],
+                    'description' => 'Überschreibt oder erstellt einen Spieler mit den angegebenen Parametern.',
+                    'parameters' => [
+                        'name' => [
+                            'required' => true,
+                            'type' => 'text/plain',
+                            'description' => 'Name des Spielers',
+                        ],
+                        'password' => [
+                            'required' => true,
+                            'type' => 'text/plain',
+                            'description' => 'Passwort des Spielers',
+                        ],
+                    ],
+                    'example' => [
+                        'name' => 'Bernd',
+                        'password' => '5e(R37',
+                    ],
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Der Spieler wurde erfolgreich ersetzt und ' .
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CREATED => 'Der Spieler wurde erfolgreich erstellt und ' .
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
+                    ],
+                ],
+                'POST' => [
+                    'method' => 'controller.user:updateAction',
+                    'content-types' => [
+                        'application/x-www-form-urlencoded',
+                        'application/json',
+                        'text/xml',
+                    ],
+                    'description' => 'Aktualisiert den Spieler anhand der übergebenen Parameter.',
+                    'parameters' => [
+                        'name' => [
+                            'required' => false,
+                            'type' => 'text/plain',
+                            'description' => 'Name des Spielers',
+                        ],
+                        'password' => [
+                            'required' => false,
+                            'type' => 'text/plain',
+                            'description' => 'Passwort des Spielers',
+                        ],
+                    ],
+                    'example' => [
+                        'name' => 'Bernd',
+                        'password' => '5e(R37',
+                    ],
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Der Spieler wurde erfolgreich aktualisiert und ' .
+                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
+                        Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
+                    ],
+                ],
+                'DELETE' => [
+                    'method' => 'controller.user:deleteAction',
+                    'description' => 'Löscht einen Spieler',
+                    'returnValues' => [
+                        Response::HTTP_OK => 'Der Spieler wurde erfolgreich gelöscht und ' .
+                            'die zuletzt bekannte Ressourcenrepräsentation ist in der Antwort enthalten.',
+                        Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
+                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
+                    ],
+                ],
+            ],
+        ];
     }
 
     /**
@@ -80,187 +226,17 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Diese Funktion beschreibt POST /users/.
-     *
-     * @param Request  $request
-     * @param Response $response
-     *
-     * @return array|Hal
-     * @throws HttpConflictException wenn ein Validierungsfehler auftritt.
-     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte.
+     * @return UserManager
      */
-    public function createAction(Request $request, Response $response)
+    protected function getUserManager()
     {
-        $user = new User();
-
-        if (!$request->request->has('name')) {
-            throw new HttpConflictException(
-                10001,
-                'You must specify a name.',
-                'name',
-                'The user has to specify a name, '.
-                'so he can authenticate/authorize himself with the API later on.'
-            );
-        }
-
-        if (!$request->request->has('password')) {
-            throw new HttpConflictException(
-                10002,
-                'You must specify a password.',
-                'password',
-                'The user has to specify a password, '.
-                'so he can authenticate/authorize himself with the API later on.'
-            );
-        }
-
-        $user->setName($request->get('name'));
-        $user->setPassword($request->get('password'));
-
-        if ($this->getUserManager()->save($user)) {
-            $response->setStatusCode(Response::HTTP_CREATED);
-            $response->headers->set(
-                'Location',
-                $this->getUrlGenerator()->generate(
-                    'user_detail',
-                    ['id' => $user->getId()]
-                )
-            );
-
-            return $this->prepareResponseReturn($user, $request);
-        }
-
-        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
-
-    /**
-     * Diese Funktion beschreibt GET /users/{id}.
-     *
-     * @param int $id
-     *
-     * @return array|Hal
-     *
-     * @throws NotFoundHttpException wenn der Benutzer nicht gefunden werden konnte.
-     */
-    public function detailAction(Request $request, $id)
-    {
-        $user = $this->getUserManager()->load($id);
-
-        if ($user) {
-            return $this->prepareResponseReturn($user, $request);
-        }
-
-        throw new NotFoundHttpException('Could not find user '.$id);
-    }
-
-    /**
-     * Diese Funktion beschreibt PUT /users/{id}.
-     *
-     * @param Request $request
-     * @param int     $id
-     *
-     * @return array|Hal
-     *
-     * @throws HttpConflictException wenn ein Validierungsfehler auftritt.
-     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte.
-     */
-    public function replaceAction(Request $request, $id)
-    {
-        if (!$request->request->has('name')) {
-            throw new HttpConflictException(
-                10011,
-                'You must specify a name.',
-                'name',
-                'The user has to specify a name, '.
-                'so he can authenticate/authorize himself with the API later on.'
-            );
-        }
-
-        if (!$request->request->has('password')) {
-            throw new HttpConflictException(
-                10012,
-                'You must specify a password.',
-                'password',
-                'The user has to specify a password, '.
-                'so he can authenticate/authorize himself with the API later on.'
-            );
-        }
-        $user = $this->getUserManager()->load($id);
-
-        if (!$user) {
-            $user = new User();
-        }
-
-        $user->setName($request->request->get('name'));
-        $user->setPassword($request->request->get('password'));
-
-        if ($this->getUserManager()->save($user)) {
-            return $this->prepareResponseReturn($user, $request);
-        }
-
-        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
-
-    /**
-     * Diese Funktion beschreibt POST /users/{id}.
-     *
-     * @param Request $request
-     * @param int     $id
-     *
-     * @return array|Hal
-     *
-     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte.
-     * @throws NotFoundHttpException wenn der Benutzer nicht gefunden werden konnte.
-     */
-    public function updateAction(Request $request, $id)
-    {
-        $user = $this->getUserManager()->load($id);
-
-        if ($user) {
-            if ($request->request->has('name')) {
-                $user->setName($request->request->get('name'));
-            }
-
-            if ($request->request->has('password')) {
-                $user->setPassword($request->request->get('password'));
-            }
-
-            if ($this->getUserManager()->save($user)) {
-                return $this->prepareResponseReturn($user, $request);
-            }
-
-            throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-
-        throw new NotFoundHttpException('Could not find user '.$id);
-    }
-
-    /**
-     * Diese Funktion beschreibt DELETE /users/{id}.
-     *
-     * @param Request $request
-     * @param int $id
-     *
-     * @return array|Hal
-     *
-     * @throws NotFoundHttpException wenn der Benutzer nicht gefunden werden konnte.
-     */
-    public function deleteAction(Request $request, $id)
-    {
-        $user = $this->getUserManager()->load($id);
-
-        if ($user) {
-            $this->getUserManager()->delete($user);
-
-            return $this->prepareResponseReturn($user, $request);
-        }
-
-        throw new NotFoundHttpException('Could not find user '.$id);
+        return $this->userManager;
     }
 
     /**
      * Diese Funktion bereitet die Daten der Action Funktionen auf.
      *
-     * @param mixed   $data
+     * @param mixed $data
      * @param Request $request
      *
      * @return array|Hal
@@ -327,7 +303,7 @@ class UserController implements UrlGeneratorAwareInterface
      *       Dabei könnte ein SubRequest durch den HTTP Kernel an den Detailendpunkt gesendet werden.
      *
      * @param Request $request
-     * @param Hal     $hal
+     * @param Hal $hal
      */
     protected function handleEmbedding(Request $request, Hal $hal)
     {
@@ -371,156 +347,178 @@ class UserController implements UrlGeneratorAwareInterface
     }
 
     /**
-     * Diese Funktion beschreibt alle Route, die von diesem Controller bedient werden.
+     * Diese Funktion beschreibt POST /users/.
      *
-     * Zugleich werde die Restriktionen und Dokumentation der einzelnen Endpunkte definiert.
+     * @param Request $request
+     * @param Response $response
      *
-     * Keys und deren Bedeutung:
-     *      - method: Dieser Key beschreibt einen im System registrierten Service und dessen Funktion,
-     *               die beim Aufrufen der Route sich um die abarbeitung des Requests kümmert.
-     *      - description: Beschreibt, was die Funktion macht.
-     *      - returnValues: Welche Statuscodes werden von dieser Funktion zurückgegeben und welche,
-     *                      Bedeutung haben diese im Kontext der gerufenen Funktion
-     *      - content-types: Wird dieser Key angegeben, so wird die Kommunikation mit diesen Endpunkten,
-     *                       auf diese Formate beschränkt. Meist wird dies bei schreibenden Methoden benötigt.
-     *      - parameters: Definiert die Daten, die dieser Endpunkt erwartet.
-     *      - example: Ein Beispiel für die definierten Parameter.
-     *      - before: Eine Closure, welche ausgeführt werden soll bevor die definirte Methode gerufen wird.
-     *      - after: Eine Closure, welche ausgeführt werden soll nachdem die definirte Methode gerufen wurde.
-     *      - convert: Eine Closure, welche die übergebenen Parameter verarbeitet/konvertiert.
-     *
-     * @return array
+     * @return array|Hal
+     * @throws HttpConflictException wenn ein Validierungsfehler auftritt.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte.
      */
-    public static function getRoutes()
+    public function createAction(Request $request, Response $response)
     {
-        return [
-            '/' => [
-                'GET' => [
-                    'method' => 'controller.user:listAction',
-                    'description' => 'Gibt eine Liste von URIs aller Spieler zurück. Dabei kann der '.
-                        'GET Parameter embed verwendet werden, '.
-                        'um die jeweilige Spieler in die Antwort direkt mit einzubinden.',
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Die Antwort enthält eine Liste von URIs aller Spieler.',
-                    ],
-                ],
-                'POST' => [
-                    'method' => 'controller.user:createAction',
-                    'description' => 'Erstellt einen Spieler.',
-                    'content-types' => [
-                        'application/x-www-form-urlencoded',
-                        'application/json',
-                        'text/xml',
-                    ],
-                    'parameters' => [
-                        'name' => [
-                            'required' => true,
-                            'type' => 'text/plain',
-                            'description' => 'Name des Spielers',
-                        ],
-                        'password' => [
-                            'required' => true,
-                            'type' => 'text/plain',
-                            'description' => 'Passwort des Spielers',
-                        ],
-                    ],
-                    'example' => [
-                        'name' => 'Bernd',
-                        'password' => '5e(R37',
-                    ],
-                    'returnValues' => [
-                        Response::HTTP_CREATED => 'Der Spieler wurde erfolgreich erstellt und '.
-                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
-                    ],
-                ],
-            ],
-            '/{id}' => [
-                'GET' => [
-                    'method' => 'controller.user:detailAction',
-                    'description' => 'Gibt die Detailes eine Spielers zurück.',
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Der Spieler wurde gefunden befindet sich in der Antwort.',
-                        Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
-                    ],
-                ],
-                'PUT' => [
-                    'method' => 'controller.user:replaceAction',
-                    'content-types' => [
-                        'application/x-www-form-urlencoded',
-                        'application/json',
-                        'text/xml',
-                    ],
-                    'description' => 'Überschreibt oder erstellt einen Spieler mit den angegebenen Parametern.',
-                    'parameters' => [
-                        'name' => [
-                            'required' => true,
-                            'type' => 'text/plain',
-                            'description' => 'Name des Spielers',
-                        ],
-                        'password' => [
-                            'required' => true,
-                            'type' => 'text/plain',
-                            'description' => 'Passwort des Spielers',
-                        ],
-                    ],
-                    'example' => [
-                        'name' => 'Bernd',
-                        'password' => '5e(R37',
-                    ],
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Der Spieler wurde erfolgreich ersetzt und '.
-                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_CREATED => 'Der Spieler wurde erfolgreich erstellt und '.
-                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
-                    ],
-                ],
-                'POST' => [
-                    'method' => 'controller.user:updateAction',
-                    'content-types' => [
-                        'application/x-www-form-urlencoded',
-                        'application/json',
-                        'text/xml',
-                    ],
-                    'description' => 'Aktualisiert den Spieler anhand der übergebenen Parameter.',
-                    'parameters' => [
-                        'name' => [
-                            'required' => false,
-                            'type' => 'text/plain',
-                            'description' => 'Name des Spielers',
-                        ],
-                        'password' => [
-                            'required' => false,
-                            'type' => 'text/plain',
-                            'description' => 'Passwort des Spielers',
-                        ],
-                    ],
-                    'example' => [
-                        'name' => 'Bernd',
-                        'password' => '5e(R37',
-                    ],
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Der Spieler wurde erfolgreich aktualisiert und '.
-                            'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
-                        Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
-                    ],
-                ],
-                'DELETE' => [
-                    'method' => 'controller.user:deleteAction',
-                    'description' => 'Löscht einen Spieler',
-                    'returnValues' => [
-                        Response::HTTP_OK => 'Der Spieler wurde erfolgreich gelöscht und '.
-                            'die zuletzt bekannte Ressourcenrepräsentation ist in der Antwort enthalten.',
-                        Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
-                        Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
-                    ],
-                ],
-            ],
-        ];
+        $user = new User();
+
+        if (!$request->request->has('name')) {
+            throw new HttpConflictException(
+                10001,
+                'You must specify a name.',
+                'name',
+                'The user has to specify a name, ' .
+                'so he can authenticate/authorize himself with the API later on.'
+            );
+        }
+
+        if (!$request->request->has('password')) {
+            throw new HttpConflictException(
+                10002,
+                'You must specify a password.',
+                'password',
+                'The user has to specify a password, ' .
+                'so he can authenticate/authorize himself with the API later on.'
+            );
+        }
+
+        $user->setName($request->get('name'));
+        $user->setPassword($request->get('password'));
+
+        if ($this->getUserManager()->save($user)) {
+            $response->setStatusCode(Response::HTTP_CREATED);
+            $response->headers->set(
+                'Location',
+                $this->getUrlGenerator()->generate(
+                    'user_detail',
+                    ['id' => $user->getId()]
+                )
+            );
+
+            return $this->prepareResponseReturn($user, $request);
+        }
+
+        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Diese Funktion beschreibt GET /users/{id}.
+     *
+     * @param Request $request
+     * @param int $id
+     * @return array|Hal
+     */
+    public function detailAction(Request $request, $id)
+    {
+        $user = $this->getUserManager()->load($id);
+
+        if ($user) {
+            return $this->prepareResponseReturn($user, $request);
+        }
+
+        throw new NotFoundHttpException('Could not find user ' . $id);
+    }
+
+    /**
+     * Diese Funktion beschreibt PUT /users/{id}.
+     *
+     * @param Request $request
+     * @param int $id
+     *
+     * @return array|Hal
+     *
+     * @throws HttpConflictException wenn ein Validierungsfehler auftritt.
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte.
+     */
+    public function replaceAction(Request $request, $id)
+    {
+        if (!$request->request->has('name')) {
+            throw new HttpConflictException(
+                10011,
+                'You must specify a name.',
+                'name',
+                'The user has to specify a name, ' .
+                'so he can authenticate/authorize himself with the API later on.'
+            );
+        }
+
+        if (!$request->request->has('password')) {
+            throw new HttpConflictException(
+                10012,
+                'You must specify a password.',
+                'password',
+                'The user has to specify a password, ' .
+                'so he can authenticate/authorize himself with the API later on.'
+            );
+        }
+        $user = $this->getUserManager()->load($id);
+
+        if (!$user) {
+            $user = new User();
+        }
+
+        $user->setName($request->request->get('name'));
+        $user->setPassword($request->request->get('password'));
+
+        if ($this->getUserManager()->save($user)) {
+            return $this->prepareResponseReturn($user, $request);
+        }
+
+        throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Diese Funktion beschreibt POST /users/{id}.
+     *
+     * @param Request $request
+     * @param int $id
+     *
+     * @return array|Hal
+     *
+     * @throws HttpException wenn das Objekt nicht gespeichert werden konnte.
+     * @throws NotFoundHttpException wenn der Benutzer nicht gefunden werden konnte.
+     */
+    public function updateAction(Request $request, $id)
+    {
+        $user = $this->getUserManager()->load($id);
+
+        if ($user) {
+            if ($request->request->has('name')) {
+                $user->setName($request->request->get('name'));
+            }
+
+            if ($request->request->has('password')) {
+                $user->setPassword($request->request->get('password'));
+            }
+
+            if ($this->getUserManager()->save($user)) {
+                return $this->prepareResponseReturn($user, $request);
+            }
+
+            throw new HttpException(Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        throw new NotFoundHttpException('Could not find user ' . $id);
+    }
+
+    /**
+     * Diese Funktion beschreibt DELETE /users/{id}.
+     *
+     * @param Request $request
+     * @param int $id
+     *
+     * @return array|Hal
+     *
+     * @throws NotFoundHttpException wenn der Benutzer nicht gefunden werden konnte.
+     */
+    public function deleteAction(Request $request, $id)
+    {
+        $user = $this->getUserManager()->load($id);
+
+        if ($user) {
+            $this->getUserManager()->delete($user);
+
+            return $this->prepareResponseReturn($user, $request);
+        }
+
+        throw new NotFoundHttpException('Could not find user ' . $id);
     }
 }

@@ -2,7 +2,12 @@
 
 namespace Htwdd\Chessapi\Service;
 
-class ChenardEngine implements ChessEngineInterface {
+/**
+ * Dieses Interface sollte von einer SchachEngine implementiert werden.
+ * Dabei kann diese nach der aktuellen "Meinung" der KI befragt werden.
+ */
+class ChenardEngine implements ChessEngineInterface
+{
 
     protected $server;
     protected $port;
@@ -10,6 +15,8 @@ class ChenardEngine implements ChessEngineInterface {
 
     /**
      * ChenardEngine constructor.
+     * @param $server
+     * @param $port
      */
     public function __construct($server, $port)
     {
@@ -19,7 +26,15 @@ class ChenardEngine implements ChessEngineInterface {
 
 
     /**
-     * @inheritDoc
+     * @param string $start Startsituation in FEN
+     * @param array $history Historie bereits getätigter Züge.
+     * @param int $costType einer der vom Interface definierten COST_* Typen.
+     * @param int $costValue wertigkeit des jeweiligen Kostentyps
+     *
+     * @return string
+     *
+     * @throws \InvalidArgumentException kann geworfen werden, wenn ein Kostentyp nicht unterstützt wird.
+     * @throws \UnexpectedValueException wird geworfen, wenn die FEN ungültig ist.
      */
     public function calculateBestMove($start, array $history, $costType, $costValue)
     {
@@ -32,7 +47,7 @@ class ChenardEngine implements ChessEngineInterface {
             return null;
         }
 
-        fwrite($sock, 'new'."\n");
+        fwrite($sock, 'new' . "\n");
         $answer = fread($sock, 1000);
         if (strpos($answer, 'OK') === false) {
             return null;
@@ -41,7 +56,7 @@ class ChenardEngine implements ChessEngineInterface {
 
 
         $sock = fsockopen($this->server, $this->port);
-        fwrite($sock, 'move '.implode(' ', $history)."\n");
+        fwrite($sock, 'move ' . implode(' ', $history) . "\n");
         $answer = fread($sock, 1000);
         if (strpos($answer, 'OK') === false) {
             return null;
@@ -50,7 +65,7 @@ class ChenardEngine implements ChessEngineInterface {
 
         $sock = fsockopen($this->server, $this->port);
         if (strpos($answer, 'OK') !== false) {
-            fwrite($sock, 'think '.$costValue."\n");
+            fwrite($sock, 'think ' . $costValue . "\n");
 
             $san = $pen = null;
 

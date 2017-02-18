@@ -7,8 +7,9 @@ use Htwdd\Chessapi\Exception\AutoIncrementException;
 /**
  * Diese Klasse setzt einen AutoIncrement Mechanismus auf Dateisystemebene um.
  */
-class AutoIncrementManager {
-    /** @var FileManager  */
+class AutoIncrementManager
+{
+    /** @var FileManager */
     private $fileManager;
 
     /**
@@ -19,14 +20,6 @@ class AutoIncrementManager {
     public function __construct(FileManager $fm)
     {
         $this->fileManager = $fm;
-    }
-
-    /**
-     * @return FileManager
-     */
-    protected function getFileManager()
-    {
-        return $this->fileManager;
     }
 
     /**
@@ -51,8 +44,8 @@ class AutoIncrementManager {
     /**
      * Holt die nächste ID für ein Objekt.
      *
+     * @param $object
      * @return int|null
-     *
      * @throws AutoIncrementException
      */
     public function getNextIncrement($object)
@@ -73,7 +66,7 @@ class AutoIncrementManager {
             return $id;
         }
 
-        throw new AutoIncrementException('Could not get Increment for: '.get_class($object));
+        throw new AutoIncrementException('Could not get Increment for: ' . get_class($object));
     }
 
     /**
@@ -81,19 +74,29 @@ class AutoIncrementManager {
      *
      * @param object $object
      * @return \SplFileObject
+     *
+     * @throws \RuntimeException wenn die Datei nicht geöffnet werden konnte.
      */
     public function getIncrementFile($object)
     {
-        $incrementName = '.auto_increment_'.strtolower(
-            basename(
-                str_replace(
-                    '\\',
-                    '/',
-                    get_class($object)
+        $incrementName = '.auto_increment_' . strtolower(
+                basename(
+                    str_replace(
+                        '\\',
+                        '/',
+                        get_class($object)
+                    )
                 )
-            )
-        );
+            );
 
         return $this->getFileManager()->openFile($incrementName, 'c+', true);
+    }
+
+    /**
+     * @return FileManager
+     */
+    protected function getFileManager()
+    {
+        return $this->fileManager;
     }
 }

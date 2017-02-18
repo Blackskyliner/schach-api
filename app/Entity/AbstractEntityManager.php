@@ -13,21 +13,21 @@ use Symfony\Component\Routing\RequestContext;
  */
 abstract class AbstractEntityManager implements ManagerInterface
 {
-    /** @var FileManager  */
-    private $fileManager;
-
-    /** @var  AutoIncrementManager */
-    private $incrementManager;
-
     /**
      * @var RequestContext
      */
     protected $requestContext;
+    /** @var FileManager */
+    private $fileManager;
+    /** @var  AutoIncrementManager */
+    private $incrementManager;
 
     /**
      * MatchManager constructor.
      *
      * @param FileManager $fm
+     * @param AutoIncrementManager $incrementManager
+     * @param RequestContext $rc
      */
     public function __construct(FileManager $fm, AutoIncrementManager $incrementManager, RequestContext $rc)
     {
@@ -37,11 +37,61 @@ abstract class AbstractEntityManager implements ManagerInterface
     }
 
     /**
+     * Speichert die übergebene Entität.
+     *
+     * @param object $entity Entität, die gespeichert werden soll.
+     * @return bool true, wenn erfolgreich gespeichert.
+     */
+    public function save($entity)
+    {
+        // Create ID
+        try {
+            if ($this->getIdentifier($entity) === null) {
+                $incrementId = $this->getAutoIncrementManager()->getNextIncrement($entity);
+                $this->setIdentifier($entity, $incrementId);
+            }
+        } catch (AutoIncrementException $e) {
+            return false;
+        }
+
+        $payload = serialize($entity);
+
+        return $this->getFileManager()->writeFile($this->getFileNameForObject($entity), $payload);
+    }
+
+    /**
+     * Gets the identifier on an managed entity.
+     *
+     * May be easily overwritten by extending manager.
+     * For example if the managed entity does not have an 'id property.
+     *
+     * @param object $entity
+     */
+    public function getIdentifier($entity)
+    {
+        return $entity->getId();
+    }
+
+    /**
      * @return AutoIncrementManager
      */
     protected function getAutoIncrementManager()
     {
         return $this->incrementManager;
+    }
+
+    /**
+     * Sets the identifier on an managed entity.
+     *
+     * May be easily overwritten by extending manager.
+     * For example if the managed entity does not have an 'id property.
+     *
+     * @param object $entity
+     * @param integer $id
+     */
+    public function setIdentifier($entity, $id)
+    {
+        $this->getAutoIncrementManager()->setAutoIncrement($entity, 'id', $id);
     }
 
     /**
@@ -71,7 +121,7 @@ abstract class AbstractEntityManager implements ManagerInterface
      */
     protected function getFileNameForObjectId($entityId)
     {
-        return $this->getEntityPath().DIRECTORY_SEPARATOR.$entityId;
+        return $this->getEntityPath() . DIRECTORY_SEPARATOR . $entityId;
     }
 
     /**
@@ -92,54 +142,10 @@ abstract class AbstractEntityManager implements ManagerInterface
     }
 
     /**
-     * @inheritDoc
-     */
-    public function save($entity)
-    {
-        // Create ID
-        try {
-            if ($this->getIdentifier($entity) === null) {
-                $incrementId = $this->getAutoIncrementManager()->getNextIncrement($entity);
-                $this->setIdentifier($entity, $incrementId);
-            }
-        } catch (AutoIncrementException $e) {
-            return false;
-        }
-
-        $payload = serialize($entity);
-
-        return $this->getFileManager()->writeFile($this->getFileNameForObject($entity), $payload);
-    }
-
-    /**
-     * Sets the identifier on an managed entity.
+     * Löscht die übergebene Entität.
      *
-     * May be easily overwritten by extending manager.
-     * For example if the managed entity does not have an 'id property.
-     *
-     * @param object $entity
-     * @param integer $id
-     */
-    public function setIdentifier($entity, $id)
-    {
-        $this->getAutoIncrementManager()->setAutoIncrement($entity, 'id', $id);
-    }
-
-    /**
-     * Gets the identifier on an managed entity.
-     *
-     * May be easily overwritten by extending manager.
-     * For example if the managed entity does not have an 'id property.
-     *
-     * @param object $entity
-     */
-    public function getIdentifier($entity)
-    {
-        return $entity->getId();
-    }
-
-    /**
-     * @inheritDoc
+     * @param object $entity Entität, die gelöscht werden soll
+     * @return bool
      */
     public function delete($entity)
     {
@@ -147,7 +153,12 @@ abstract class AbstractEntityManager implements ManagerInterface
     }
 
     /**
-     * @inheritDoc
+     * Lädt eine Entität anhand der übergebenen ID Merkmale.
+     *
+     * Siehe jeweils spezifische Managerdokumentation, wie der identifizierende Schlüssel definiert ist.
+     *
+     * @param mixed $id Der identfizierende Schlüssel für die Entität.
+     * @return object|null
      */
     public function load($id)
     {
@@ -191,7 +202,7 @@ abstract class AbstractEntityManager implements ManagerInterface
 
         try {
             $directory = new \DirectoryIterator(
-                $this->getFileManager()->getDirectory().DIRECTORY_SEPARATOR.$this->getEntityPath()
+                $this->getFileManager()->getDirectory() . DIRECTORY_SEPARATOR . $this->getEntityPath()
             );
             foreach ($directory as $directoryInformation) {
                 if (!$directoryInformation->isDot() && $directoryInformation->isReadable()) {

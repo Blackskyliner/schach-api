@@ -6,10 +6,10 @@ use Silex\Application;
 
 define('APP_ROOT', __DIR__);
 if (!defined('WEB_ROOT')) {
-    define('WEB_ROOT', __DIR__.'/../web');
+    define('WEB_ROOT', __DIR__ . '/../web');
 }
-define('VENDOR_ROOT', __DIR__.'/../vendor');
-define('DATA_ROOT', __DIR__.'/../data');
+define('VENDOR_ROOT', __DIR__ . '/../vendor');
+define('DATA_ROOT', __DIR__ . '/../data');
 
 if (!file_exists(VENDOR_ROOT)) {
     error_log('Bitte installieren Sie alle Abhängigkeiten über composer.');
@@ -17,10 +17,10 @@ if (!file_exists(VENDOR_ROOT)) {
 }
 
 // Hole den Composer autoloader.
-$autoloader = require_once VENDOR_ROOT.'/autoload.php';
+$autoloader = require VENDOR_ROOT . '/autoload.php';
 
 $application = new Application(
-    require_once 'configuration.php'
+    require __DIR__ . '/configuration.php'
 );
 
 $application->register(new ApiServiceProvider());

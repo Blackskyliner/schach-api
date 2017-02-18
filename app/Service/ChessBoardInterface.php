@@ -9,7 +9,8 @@ namespace Htwdd\Chessapi\Service;
  * Dabei werden die minimalsten Funktionen vorrausgesetzt, um ein Schachspiel zu ermöglichen.
  * @todo implementieren einer Klasse, die über dieses Interface ein Schachspiel ermöglicht.
  */
-interface ChessBoardInterface {
+interface ChessBoardInterface
+{
     /**
      * @param string $fen Spielbrett Zustand in der FEN. Standardwert ist die Startposition eines Spiels.
      * @return bool

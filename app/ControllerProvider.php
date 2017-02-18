@@ -12,7 +12,6 @@ use Nocarrier\HalLinkContainer;
 use Silex\Application;
 use Silex\ControllerCollection;
 use Silex\ControllerProviderInterface;
-
 use Silex\Route;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\AcceptHeader;
@@ -41,104 +40,12 @@ use Symfony\Component\Routing\RouteCollection;
 class ControllerProvider implements ControllerProviderInterface
 {
     /**
-     * @param Application $app
-     * @param ControllerCollection $rootCollection
-     * @param $routeDefinitions
-     * @param $routePrefix
-     * @return ControllerCollection
+     * Returns routes to connect to the given application.
+     *
+     * @param Application $app An Application instance
+     *
+     * @return ControllerCollection A ControllerCollection instance
      */
-    protected function registerController(
-        Application $app,
-        ControllerCollection $rootCollection,
-        $routeDefinitions,
-        $routePrefix = ''
-    ) {
-        /** @var ControllerCollection $controllerCollection */
-        $controllerCollection = $app['controllers_factory'];
-
-        foreach ($routeDefinitions as $path => $methodsWithDetails) {
-            /**
-             * Dieses Array beinhaltet die Dokumentation aller Methoden des aktuellen $path.
-             *
-             * @var array $optionsArray
-             */
-            $optionsArray = [];
-
-            // Wenn die PATCH Methode für diesen Enpunkt definiert wurde speichern wir dies zwischen,
-            // damit alle für alle Methoden der Allow-Patch Header definiert werden kann
-            $hasPatch = array_key_exists('PATCH', $methodsWithDetails);
-
-            // Diese Schleife Registriert die einzelnen Routen in Silex
-            // $method entspricht dabei GET, PUT, ...
-            // Die Routedetails dem Array der Methode aus den jeweiligen Controller::getRoutes() Funktionen
-            foreach ($methodsWithDetails as $method => $routeDetails) {
-                $controller = $controllerCollection->match($path, $routeDetails['method']);
-                $controller->method($method);
-
-                // einfache routen namen erstellen
-                $controller->bind(
-                    str_replace(
-                        array('controller.', ':', '.', 'Action'),
-                        array('', '_', '_', ''),
-                        $routeDetails['method']
-                    )
-                );
-
-                if (array_key_exists('before', $routeDetails) && is_callable($routeDetails['before'])) {
-                    $controller->before($routeDetails['before']);
-                }
-                if (array_key_exists('after', $routeDetails) && is_callable($routeDetails['after'])) {
-                    $controller->after($routeDetails['before']);
-                }
-
-                if (array_key_exists('convert', $routeDetails) && is_array($routeDetails['convert'])) {
-                    foreach ($routeDetails['convert'] as $pattern => $callable) {
-                        $controller->convert($pattern, $callable);
-                    }
-                }
-
-                // Diese Felder werden für die Dokumentation betrachtet.
-                foreach (['description', 'parameters', 'example', 'returnValues'] as $docField) {
-                    if (array_key_exists($docField, $routeDetails)) {
-                        // Wenn das jeweilige Feld existiert wird es dem OPTIONS Array hinzugefügt
-                        $optionsArray[$method][$docField] = $routeDetails[$docField];
-                    }
-                }
-
-                // Accept-Patch Header hinzufügen
-                if ($hasPatch && array_key_exists('content-types', $methodsWithDetails['PATCH'])) {
-                    $controller->after(function (Request $request, Response $response) use ($methodsWithDetails) {
-                        $response->headers->set(
-                            'Accept-Patch',
-                            implode(',', $methodsWithDetails['PATCH']['content-types'])
-                        );
-                    });
-                    if ($method === 'PATCH') {
-                        $controller->before(function (Request $request) {
-                            $request->request->set('PATCH', file_get_contents('php://input'));
-                        });
-                    }
-                }
-
-                // @todo: Vereinfacht nur den Zugriff für die content-negotiation
-                //        könnte durch eigene Felder, ähnlich der _documentation abgebildet werden.
-                $controller->value('_routeDescription', $routeDetails);
-            }
-
-            // Hier registrieren wir die OPTIONS Methode für den jeweiligen Routenendpunkt
-            // Dabei wird das $optionsArray mit der gesamten Dokumentation aller Endpunkte übergeben.
-            // Die verarbeitende Methode DocumentationController::optionsAction kann diese dann
-            // aus dem Request durch ->get('_documentation') lesen
-            $controller = $controllerCollection->match($path, 'controller.documentation:optionsAction');
-            $controller->method('OPTIONS');
-            $controller->value('_documentation', $optionsArray);
-        }
-
-        $rootCollection->mount($routePrefix, $controllerCollection);
-
-        return $controllerCollection;
-    }
-
     public function connect(Application $app)
     {
         /** @var ControllerCollection $controllers */
@@ -245,7 +152,8 @@ class ControllerProvider implements ControllerProviderInterface
                                     $currentRoute->getPath(),
                                     $routeObject->getPath()
                                 ) === 0 // Zudem muss unsere Aktuelle Route diese enthalten
-                            )) && in_array('GET', $routeObject->getMethods(), true) // außerdem muss es eine GET Route sein
+                            )) && in_array('GET', $routeObject->getMethods(),
+                            true) // außerdem muss es eine GET Route sein
                     ) {
                         // Die aktuelle Route ist entweder - oder + 1 ebene und eine GET Methode
 
@@ -296,12 +204,12 @@ class ControllerProvider implements ControllerProviderInterface
                                 // Resutieren dabei in User/create.html.twig
                                 $controller = $event->getRequest()->get('_controller');
                                 $viewPath = strtr($controller, array(
-                                    'controller.'   => '',
-                                    'Controller'    => '',
-                                    'Action'        => '',
-                                    '::'            => '/',
-                                    ':'            => '/',
-                                    '\\'            => '/',
+                                    'controller.' => '',
+                                    'Controller' => '',
+                                    'Action' => '',
+                                    '::' => '/',
+                                    ':' => '/',
+                                    '\\' => '/',
                                 ));
 
                                 if (strpos($viewPath, '/') !== false) {
@@ -336,7 +244,7 @@ class ControllerProvider implements ControllerProviderInterface
                         case 'text/xml':
                             // Die Daten, die der Controller zurückgegeben hat,
                             // werden als XML umgesetzt und zurückgegeben.
-                            $xmlResponse = new \SimpleXMLElement("<?xml version=\"1.0\"?><response></response>");
+                            $xmlResponse = new \SimpleXMLElement('<?xml version="1.0"?><response></response>');
 
                             $this->arrayToXml($data, $xmlResponse);
                             $response->headers->set('Content-Type', 'text/xml');
@@ -459,7 +367,7 @@ class ControllerProvider implements ControllerProviderInterface
                             $event->setResponse($response);
                             return;
                         case 'text/xml':
-                            $xmlResponse = new \SimpleXMLElement("<?xml version=\"1.0\"?><response></response>");
+                            $xmlResponse = new \SimpleXMLElement('<?xml version="1.0"?><response></response>');
 
                             $this->arrayToXml($exception->getConflicInformation(), $xmlResponse);
                             $response->headers->set('Content-Type', 'text/xml');
@@ -507,7 +415,7 @@ class ControllerProvider implements ControllerProviderInterface
                             $event->setResponse($response);
                             return;
                         case 'text/xml':
-                            $xmlResponse = new \SimpleXMLElement("<?xml version=\"1.0\"?><response></response>");
+                            $xmlResponse = new \SimpleXMLElement('<?xml version="1.0"?><response></response>');
 
                             $message = $exception->getMessage();
                             if (!is_array($message)) {
@@ -557,46 +465,102 @@ class ControllerProvider implements ControllerProviderInterface
     }
 
     /**
-     * arrayToXml aus dem HalXmlRenderer entnommen
-     *
-     * @param array $data
-     * @param \SimpleXmlElement $element
-     * @param mixed $parent
-     * @access protected
-     * @return void
+     * @param Application $app
+     * @param ControllerCollection $rootCollection
+     * @param $routeDefinitions
+     * @param $routePrefix
+     * @return ControllerCollection
      */
-    protected function arrayToXml($data, \SimpleXmlElement $element, $parent = null)
-    {
-        foreach ($data as $key => $value) {
-            if (is_array($value) || $value instanceof \Traversable) {
-                if (!is_numeric($key)) {
-                    if (count($value) > 0 && isset($value[0])) {
-                        $this->arrayToXml($value, $element, $key);
-                    } else {
-                        $subnode = $element->addChild($key);
-                        $this->arrayToXml($value, $subnode, $key);
-                    }
-                } else {
-                    $subnode = $element->addChild($parent);
-                    $this->arrayToXml($value, $subnode, $parent);
+    protected function registerController(
+        Application $app,
+        ControllerCollection $rootCollection,
+        $routeDefinitions,
+        $routePrefix = ''
+    ) {
+        /** @var ControllerCollection $controllerCollection */
+        $controllerCollection = $app['controllers_factory'];
+
+        foreach ($routeDefinitions as $path => $methodsWithDetails) {
+            /**
+             * Dieses Array beinhaltet die Dokumentation aller Methoden des aktuellen $path.
+             *
+             * @var array $optionsArray
+             */
+            $optionsArray = [];
+
+            // Wenn die PATCH Methode für diesen Enpunkt definiert wurde speichern wir dies zwischen,
+            // damit alle für alle Methoden der Allow-Patch Header definiert werden kann
+            $hasPatch = array_key_exists('PATCH', $methodsWithDetails);
+
+            // Diese Schleife Registriert die einzelnen Routen in Silex
+            // $method entspricht dabei GET, PUT, ...
+            // Die Routedetails dem Array der Methode aus den jeweiligen Controller::getRoutes() Funktionen
+            foreach ($methodsWithDetails as $method => $routeDetails) {
+                $controller = $controllerCollection->match($path, $routeDetails['method']);
+                $controller->method($method);
+
+                // einfache routen namen erstellen
+                $controller->bind(
+                    str_replace(
+                        array('controller.', ':', '.', 'Action'),
+                        array('', '_', '_', ''),
+                        $routeDetails['method']
+                    )
+                );
+
+                if (array_key_exists('before', $routeDetails) && is_callable($routeDetails['before'])) {
+                    $controller->before($routeDetails['before']);
                 }
-            } else {
-                if (!is_numeric($key)) {
-                    if (substr($key, 0, 1) === '@') {
-                        $element->addAttribute(substr($key, 1), $value);
-                    } elseif ($key === 'value' and count($data) === 1) {
-                        $element[0] = $value;
-                    } elseif (is_bool($value)) {
-                        $element->addChild($key, intval($value));
-                    } else {
-                        $element->addChild($key, htmlspecialchars($value, ENT_QUOTES));
-                    }
-                } else {
-                    $child = $element->addChild($parent, htmlspecialchars($value, ENT_QUOTES));
-                    $child->addAttribute('number', $key);
+                if (array_key_exists('after', $routeDetails) && is_callable($routeDetails['after'])) {
+                    $controller->after($routeDetails['before']);
                 }
+
+                if (array_key_exists('convert', $routeDetails) && is_array($routeDetails['convert'])) {
+                    foreach ($routeDetails['convert'] as $pattern => $callable) {
+                        $controller->convert($pattern, $callable);
+                    }
+                }
+
+                // Diese Felder werden für die Dokumentation betrachtet.
+                foreach (['description', 'parameters', 'example', 'returnValues'] as $docField) {
+                    if (array_key_exists($docField, $routeDetails)) {
+                        // Wenn das jeweilige Feld existiert wird es dem OPTIONS Array hinzugefügt
+                        $optionsArray[$method][$docField] = $routeDetails[$docField];
+                    }
+                }
+
+                // Accept-Patch Header hinzufügen
+                if ($hasPatch && array_key_exists('content-types', $methodsWithDetails['PATCH'])) {
+                    $controller->after(function (Request $request, Response $response) use ($methodsWithDetails) {
+                        $response->headers->set(
+                            'Accept-Patch',
+                            implode(',', $methodsWithDetails['PATCH']['content-types'])
+                        );
+                    });
+                    if ($method === 'PATCH') {
+                        $controller->before(function (Request $request) {
+                            $request->request->set('PATCH', file_get_contents('php://input'));
+                        });
+                    }
+                }
+
+                // @todo: Vereinfacht nur den Zugriff für die content-negotiation
+                //        könnte durch eigene Felder, ähnlich der _documentation abgebildet werden.
+                $controller->value('_routeDescription', $routeDetails);
             }
+
+            // Hier registrieren wir die OPTIONS Methode für den jeweiligen Routenendpunkt
+            // Dabei wird das $optionsArray mit der gesamten Dokumentation aller Endpunkte übergeben.
+            // Die verarbeitende Methode DocumentationController::optionsAction kann diese dann
+            // aus dem Request durch ->get('_documentation') lesen
+            $controller = $controllerCollection->match($path, 'controller.documentation:optionsAction');
+            $controller->method('OPTIONS');
+            $controller->value('_documentation', $optionsArray);
         }
+
+        $rootCollection->mount($routePrefix, $controllerCollection);
+
+        return $controllerCollection;
     }
 
     /**
@@ -657,68 +621,68 @@ class ControllerProvider implements ControllerProviderInterface
                     $current[$xmlTag['tag']] = $result;
                     unset($result);
                     if ($attributesData) {
-                        $current['@'.$xmlTag['tag']] = $attributesData;
+                        $current['@' . $xmlTag['tag']] = $attributesData;
                     }
-                    $repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']] = 1;
+                    $repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']] = 1;
                     $current = &$current[$xmlTag['tag']];
                 } else {
                     if (isset ($current[$xmlTag['tag']]['0'])) {
-                        $current[$xmlTag['tag']][$repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']]] = $result;
+                        $current[$xmlTag['tag']][$repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']]] = $result;
                         unset($result);
                         if ($attributesData) {
-                            if (isset ($repeatedTagIndex['@'.$xmlTag['tag'].'_'.$xmlTag['level']])) {
-                                $current[$xmlTag['tag']][$repeatedTagIndex['@'.$xmlTag['tag'].'_'.$xmlTag['level']]] = $attributesData;
+                            if (isset ($repeatedTagIndex['@' . $xmlTag['tag'] . '_' . $xmlTag['level']])) {
+                                $current[$xmlTag['tag']][$repeatedTagIndex['@' . $xmlTag['tag'] . '_' . $xmlTag['level']]] = $attributesData;
                             }
                         }
-                        $repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']] += 1;
+                        $repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']] += 1;
                     } else {
                         $current[$xmlTag['tag']] = [$current[$xmlTag['tag']], $result];
                         unset($result);
-                        $repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']] = 2;
-                        if (isset ($current['@'.$xmlTag['tag']])) {
-                            $current[$xmlTag['tag']]['@0'] = $current['@'.$xmlTag['tag']];
-                            unset ($current['@'.$xmlTag['tag']]);
+                        $repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']] = 2;
+                        if (isset ($current['@' . $xmlTag['tag']])) {
+                            $current[$xmlTag['tag']]['@0'] = $current['@' . $xmlTag['tag']];
+                            unset ($current['@' . $xmlTag['tag']]);
                         }
                         if ($attributesData) {
                             $current[$xmlTag['tag']]['@1'] = $attributesData;
                         }
                     }
-                    $lastItemIndex = $repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']] - 1;
+                    $lastItemIndex = $repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']] - 1;
                     $current = &$current[$xmlTag['tag']][$lastItemIndex];
                 }
             } elseif ($xmlTag['type'] == 'complete') {
-                if (!isset ($current[$xmlTag['tag']]) and empty ($current['@'.$xmlTag['tag']])) {
+                if (!isset ($current[$xmlTag['tag']]) and empty ($current['@' . $xmlTag['tag']])) {
                     $current[$xmlTag['tag']] = $result;
                     unset($result);
-                    $repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']] = 1;
+                    $repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']] = 1;
                     if ($tagPriority and $attributesData) {
-                        $current['@'.$xmlTag['tag']] = $attributesData;
+                        $current['@' . $xmlTag['tag']] = $attributesData;
                     }
                 } else {
                     if (isset ($current[$xmlTag['tag']]['0']) and is_array($current[$xmlTag['tag']])) {
-                        $current[$xmlTag['tag']][$repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']]] = $result;
+                        $current[$xmlTag['tag']][$repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']]] = $result;
                         unset($result);
                         if ($tagPriority and $getAttributes and $attributesData) {
-                            $current[$xmlTag['tag']]['@'.$repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']]] = $attributesData;
+                            $current[$xmlTag['tag']]['@' . $repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']]] = $attributesData;
                         }
-                        $repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']] += 1;
+                        $repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']] += 1;
                     } else {
                         $current[$xmlTag['tag']] = array(
                             $current[$xmlTag['tag']],
                             $result
                         );
                         unset($result);
-                        $repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']] = 1;
+                        $repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']] = 1;
                         if ($tagPriority and $getAttributes) {
-                            if (isset ($current['@'.$xmlTag['tag']])) {
-                                $current[$xmlTag['tag']]['@0'] = $current['@'.$xmlTag['tag']];
-                                unset ($current['@'.$xmlTag['tag']]);
+                            if (isset ($current['@' . $xmlTag['tag']])) {
+                                $current[$xmlTag['tag']]['@0'] = $current['@' . $xmlTag['tag']];
+                                unset ($current['@' . $xmlTag['tag']]);
                             }
                             if ($attributesData) {
-                                $current[$xmlTag['tag']]['@'.$repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']]] = $attributesData;
+                                $current[$xmlTag['tag']]['@' . $repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']]] = $attributesData;
                             }
                         }
-                        $repeatedTagIndex[$xmlTag['tag'].'_'.$xmlTag['level']] += 1;
+                        $repeatedTagIndex[$xmlTag['tag'] . '_' . $xmlTag['level']] += 1;
                     }
                 }
             } elseif ($xmlTag['type'] == 'close') {
@@ -727,5 +691,48 @@ class ControllerProvider implements ControllerProviderInterface
             unset($xmlValues[$num]);
         }
         return $xmlArray;
+    }
+
+    /**
+     * arrayToXml aus dem HalXmlRenderer entnommen
+     *
+     * @param array $data
+     * @param \SimpleXmlElement $element
+     * @param mixed $parent
+     * @access protected
+     * @return void
+     */
+    protected function arrayToXml($data, \SimpleXmlElement $element, $parent = null)
+    {
+        foreach ($data as $key => $value) {
+            if (is_array($value) || $value instanceof \Traversable) {
+                if (!is_numeric($key)) {
+                    if (count($value) > 0 && isset($value[0])) {
+                        $this->arrayToXml($value, $element, $key);
+                    } else {
+                        $subnode = $element->addChild($key);
+                        $this->arrayToXml($value, $subnode, $key);
+                    }
+                } else {
+                    $subnode = $element->addChild($parent);
+                    $this->arrayToXml($value, $subnode, $parent);
+                }
+            } else {
+                if (!is_numeric($key)) {
+                    if (substr($key, 0, 1) === '@') {
+                        $element->addAttribute(substr($key, 1), $value);
+                    } elseif ($key === 'value' and count($data) === 1) {
+                        $element[0] = $value;
+                    } elseif (is_bool($value)) {
+                        $element->addChild($key, intval($value));
+                    } else {
+                        $element->addChild($key, htmlspecialchars($value, ENT_QUOTES));
+                    }
+                } else {
+                    $child = $element->addChild($parent, htmlspecialchars($value, ENT_QUOTES));
+                    $child->addAttribute('number', $key);
+                }
+            }
+        }
     }
 }

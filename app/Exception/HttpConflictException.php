@@ -35,7 +35,7 @@ class HttpConflictException extends HttpException
         $developerMessage = null,
         $status = Response::HTTP_CONFLICT,
         \Exception $previous = null,
-        array $headers = array(),
+        array $headers = [],
         $exceptionCode = 0
     ) {
         $this->conflictInformation = [

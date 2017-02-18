@@ -198,7 +198,7 @@ abstract class AbstractEntityManager implements ManagerInterface
      */
     public function listAll()
     {
-        $retVal = array();
+        $retVal = [];
 
         try {
             $directory = new \DirectoryIterator(

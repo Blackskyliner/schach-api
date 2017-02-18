@@ -129,7 +129,7 @@ class ApiServiceProvider implements ServiceProviderInterface
             }));
             $twig->addFunction(new \Twig_SimpleFunction('url', function (
                 $route,
-                $params = array(),
+                $params = [],
                 $type = UrlGeneratorInterface::ABSOLUTE_PATH
             ) use ($app) {
                 /** @var UrlGeneratorInterface $generator */

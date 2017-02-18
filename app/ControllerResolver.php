@@ -25,7 +25,7 @@ class ControllerResolver extends BaseResolver
     protected function doGetArguments(Request $request, $controller, array $parameters)
     {
         $attributes = $request->attributes->all();
-        $arguments = array();
+        $arguments = [];
         $response = $this->app['response'];
         foreach ($parameters as $param) {
             if (array_key_exists($param->name, $attributes)) {

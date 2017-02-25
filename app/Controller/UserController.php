@@ -10,6 +10,7 @@ use Htwdd\Chessapi\UrlGeneratorAwareInterface;
 use Htwdd\Chessapi\UrlGeneratorAwareTrait;
 use Nocarrier\Hal;
 use Nocarrier\HalLink;
+use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -40,6 +41,10 @@ class UserController implements UrlGeneratorAwareInterface
     public function __construct(UserManager $userManager)
     {
         $this->userManager = $userManager;
+    }
+
+    public static function authenticateUser(){
+
     }
 
     /**
@@ -137,6 +142,7 @@ class UserController implements UrlGeneratorAwareInterface
                             'description' => 'Passwort des Spielers',
                         ],
                     ],
+                    'before' => ['Htwdd\Chessapi\Service\UserAuthenticator', 'beforeControllerAction'],
                     'example' => [
                         'name' => 'Bernd',
                         'password' => '5e(R37',
@@ -148,6 +154,8 @@ class UserController implements UrlGeneratorAwareInterface
                             'die aktuelle Ressourcenrepräsentation ist in der Antwort enthalten.',
                         Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
                         Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
+                        Response::HTTP_UNAUTHORIZED => 'Der Spieler kann nur von sich bearbeitet gelöscht werden, entsprechend muss dieser sich vorher authentifizieren.',
+                        Response::HTTP_FORBIDDEN => 'Es wurden falsche Basic Auth Daten angegeben. Ein Zugriff wurde verweigert.',
                     ],
                 ],
                 'POST' => [
@@ -170,6 +178,7 @@ class UserController implements UrlGeneratorAwareInterface
                             'description' => 'Passwort des Spielers',
                         ],
                     ],
+                    'before' => ['Htwdd\Chessapi\Service\UserAuthenticator', 'beforeControllerAction'],
                     'example' => [
                         'name' => 'Bernd',
                         'password' => '5e(R37',
@@ -180,16 +189,21 @@ class UserController implements UrlGeneratorAwareInterface
                         Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
                         Response::HTTP_CONFLICT => 'Der aus den Parametern resultierende Spieler ist ungültig.',
                         Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
+                        Response::HTTP_UNAUTHORIZED => 'Der Spieler kann nur von sich selbst bearbeitet werden, entsprechend muss dieser sich vorher authentifizieren.',
+                        Response::HTTP_FORBIDDEN => 'Es wurden falsche Basic Auth Daten angegeben. Ein Zugriff wurde verweigert.',
                     ],
                 ],
                 'DELETE' => [
                     'method' => 'controller.user:deleteAction',
                     'description' => 'Löscht einen Spieler',
+                    'before' => ['Htwdd\Chessapi\Service\UserAuthenticator', 'beforeControllerAction'],
                     'returnValues' => [
                         Response::HTTP_OK => 'Der Spieler wurde erfolgreich gelöscht und ' .
                             'die zuletzt bekannte Ressourcenrepräsentation ist in der Antwort enthalten.',
                         Response::HTTP_NOT_FOUND => 'Der Spieler wurde nicht gefunden.',
                         Response::HTTP_INTERNAL_SERVER_ERROR => 'Der Spieler konnte nicht auf dem Server gespeichert werden.',
+                        Response::HTTP_UNAUTHORIZED => 'Der Spieler kann nur von sich selbst gelöscht werden, entsprechend muss dieser sich vorher authentifizieren.',
+                        Response::HTTP_FORBIDDEN => 'Es wurden falsche Basic Auth Daten angegeben. Ein Zugriff wurde verweigert.',
                     ],
                 ],
             ],
